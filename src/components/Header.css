@@ -1,0 +1,48 @@
+.header {
+    background-color: var(--surface);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    padding: 16px 0;
+}
+
+.header-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.logo h2 {
+    font-weight: 800;
+    font-size: 1.5rem;
+    letter-spacing: -0.5px;
+}
+
+.nav-menu {
+    display: flex;
+    gap: 12px;
+}
+
+.nav-btn {
+    padding: 8px 16px;
+    font-size: 0.9rem;
+}
+
+.dropdown-item {
+    display: block;
+    width: 100%;
+    padding: 12px 20px;
+    text-align: left;
+    background: transparent;
+    border: none;
+    color: var(--text-main);
+    font-size: 0.95rem;
+    cursor: pointer;
+    transition: background-color 0.2s, color 0.2s;
+}
+
+.dropdown-item:hover {
+    background-color: rgba(234, 88, 12, 0.1);
+    /* Primary color low opacity */
+    color: var(--primary);
+}
