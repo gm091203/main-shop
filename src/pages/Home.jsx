@@ -21,7 +21,7 @@ const Home = () => {
     useEffect(() => {
         const timer = setInterval(() => {
             if (heroScrollRef.current) {
-                const nextSlide = (currentSlide + 1) % 3;
+                const nextSlide = (currentSlide + 1) % 2;
                 setCurrentSlide(nextSlide);
                 heroScrollRef.current.scrollTo({
                     left: heroScrollRef.current.offsetWidth * nextSlide,
@@ -73,31 +73,6 @@ const Home = () => {
                 >
                     <style>{`.hero-slider-container::-webkit-scrollbar { display: none; }`}</style>
                     
-                    {/* Slide 1: 30% Promo */}
-                    <section style={{
-                        minWidth: '100%', flex: '0 0 100%', boxSizing: 'border-box',
-                        background: 'linear-gradient(135deg, #f59e0b 0%, #ea580c 100%)',
-                        color: 'white',
-                        padding: '100px 20px',
-                        textAlign: 'center',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        justifyContent: 'center',
-                        alignItems: 'center',
-                        scrollSnapAlign: 'start'
-                    }}>
-                        <h2 style={{ fontSize: '2.5rem', fontWeight: 800, marginBottom: '16px', letterSpacing: '-1px' }}>프리미엄 셀렉트샵 ZEO'S</h2>
-                        <p style={{ fontSize: '1.2rem', opacity: 0.9, marginBottom: '32px' }}>회원가입 시 즉시 <strong style={{ color: '#fff' }}>VIP 멤버십 혜택</strong>을 누리실 수 있습니다.</p>
-                        <button 
-                            className="btn btn-outline" 
-                            style={{ fontWeight: 800, borderColor: 'white', color: 'white', fontSize: '1.1rem', padding: '12px 32px', width: 'auto' }} 
-                            onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'white'; e.currentTarget.style.color = '#ea580c'; }}
-                            onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = 'white'; }}
-                            onClick={() => navigate('/signup')}
-                        >
-                            멤버십 가입하기
-                        </button>
-                    </section>
 
                     {/* Slide 2: Default Hero */}
                     <section className="hero-section" style={{ minWidth: '100%', flex: '0 0 100%', boxSizing: 'border-box', margin: 0, scrollSnapAlign: 'start' }}>
@@ -137,7 +112,7 @@ const Home = () => {
 
                 {/* Dot Indicators */}
                 <div style={{ position: 'absolute', bottom: '20px', left: '50%', transform: 'translateX(-50%)', display: 'flex', gap: '8px' }}>
-                    {[0, 1, 2].map(index => (
+                    {[0, 1].map(index => (
                         <div 
                             key={index}
                             onClick={() => {

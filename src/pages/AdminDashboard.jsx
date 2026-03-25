@@ -311,6 +311,22 @@ const AdminDashboard = () => {
                                             <span style={{ color: '#94a3b8' }}>배송지</span>
                                             <span style={{ color: 'white', lineHeight: 1.4 }}>{selectedNotification.userInfo?.address || ''} {selectedNotification.userInfo?.detailAddress || ''}</span>
                                         </div>
+                                        {selectedNotification.items && selectedNotification.items.some(it => it.customAddress || it.detailAddress || it.idName) && (
+                                            <div style={{ marginTop: '12px', paddingTop: '12px', borderTop: '1px dashed #334155' }}>
+                                                <span style={{ color: 'var(--primary)', fontSize: '0.85rem', fontWeight: 600 }}>아이템별 요청 정보:</span>
+                                                {selectedNotification.items.map((it, idx) => (it.customAddress || it.detailAddress || it.idName) && (
+                                                    <div key={idx} style={{ fontSize: '0.8rem', color: '#cbd5e1', marginTop: '4px', paddingLeft: '8px' }}>
+                                                        <div style={{ fontWeight: 600 }}>• {it.name}</div>
+                                                        {it.customAddress && <div style={{ color: 'var(--primary)', marginLeft: '12px' }}>주소: {it.customAddress} {it.specificAddress}</div>}
+                                                        {it.idName ? (
+                                                            <div style={{ color: '#94a3b8', marginLeft: '12px', whiteSpace: 'pre-wrap' }}>주민번호: {it.idName} | {it.idBirth} | {it.idAddress} | {it.idPhoto}</div>
+                                                        ) : (
+                                                            it.detailAddress && <div style={{ color: '#94a3b8', marginLeft: '12px', whiteSpace: 'pre-wrap' }}>상세: {it.detailAddress}</div>
+                                                        )}
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
                                     </div>
                                 ) : (
                                     <span style={{ color: '#94a3b8' }}>비회원 구매이거나 상세 정보가 없습니다. (채팅창에서 문의 필요)</span>

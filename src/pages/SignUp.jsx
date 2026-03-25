@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { db } from '../firebase';
-import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
+import { doc, getDoc, collection, query, where, getDocs, setDoc } from 'firebase/firestore';
 
 const SignUp = () => {
     const navigate = useNavigate();
@@ -20,6 +20,8 @@ const SignUp = () => {
     const [isIdChecked, setIsIdChecked] = useState(false);
     const [idMessage, setIdMessage] = useState({ text: '', type: '' });
     const [isCheckingId, setIsCheckingId] = useState(false);
+    const [isRegistering, setIsRegistering] = useState(false);
+    const [statusMessage, setStatusMessage] = useState('');
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -80,7 +82,7 @@ const SignUp = () => {
         }
     };
 
-    const handleSignup = (e) => {
+    const handleSignup = async (e) => {
         e.preventDefault();
 
         // 간단한 검증 로직
@@ -108,8 +110,60 @@ const SignUp = () => {
             return;
         }
 
-        // 입력받은 회원가입 정보를 가지고 결제 페이지로 이동
-        navigate('/signup/payment', { state: { signupData: formData } });
+        setIsRegistering(true);
+        setStatusMessage('가입 처리 중...');
+
+        try {
+            console.log("Starting signup process for ID:", formData.id);
+            
+            // 중복 아이디 최종 체크
+            await Promise.race([
+                (async () => {
+                    const userDocRef = doc(db, 'users', formData.id);
+                    const userSnap = await getDoc(userDocRef);
+                    if (userSnap.exists()) {
+                        throw new Error("ALREADY_EXISTS");
+                    }
+                })(),
+                new Promise((_, reject) => setTimeout(() => reject(new Error("TIMEOUT")), 10000))
+            ]);
+            
+            // Firestore에 유저 정보 저장
+            const newUser = {
+                ...formData,
+                createdAt: new Date().toISOString(),
+                isAdmin: false
+            };
+            
+            delete newUser.passwordConfirm;
+
+            const userDocRef = doc(db, 'users', formData.id);
+            console.log("Saving user data to Firestore...");
+            await Promise.race([
+                setDoc(userDocRef, newUser),
+                new Promise((_, reject) => setTimeout(() => reject(new Error("TIMEOUT")), 10000))
+            ]);
+
+            console.log("Signup successful!");
+            setStatusMessage('회원가입이 완료되었습니다! 잠시 후 로그인 페이지로 이동합니다.');
+
+            setTimeout(() => {
+                navigate('/login');
+            }, 2000);
+        } catch (error) {
+            console.error("Critical Signup Error:", error);
+            if (error.message === "TIMEOUT") {
+                alert('처리 시간 초과 (V8)');
+            } else if (error.message === "ALREADY_EXISTS") {
+                alert('이미 존재하는 아이디입니다. 다른 아이디를 사용해주세요.');
+                setIsIdChecked(false);
+                setIdMessage({ text: '이미 사용 중인 아이디입니다.', type: 'error' });
+            } else {
+                alert(`가입 처리 오류 [V8]: [${error.code || 'UNKNOWN'}] ${error.message}`);
+            }
+            setIsRegistering(false);
+            setStatusMessage('');
+        }
     };
 
     return (
@@ -250,8 +304,25 @@ const SignUp = () => {
                         </span>
                     </div>
 
-                    <button type="submit" className="btn btn-primary" style={{ width: '100%', marginTop: '20px', padding: '14px' }}>
-                        가입하기
+                    {statusMessage && (
+                        <div style={{ marginTop: '16px', padding: '12px', borderRadius: '8px', backgroundColor: 'rgba(16, 185, 129, 0.1)', color: '#10B981', fontSize: '0.9rem', fontWeight: 600, textAlign: 'center' }}>
+                            {statusMessage}
+                        </div>
+                    )}
+
+                    <button 
+                        type="submit" 
+                        className="btn btn-primary" 
+                        style={{ 
+                            width: '100%', 
+                            marginTop: '20px', 
+                            padding: '14px',
+                            opacity: isRegistering ? 0.7 : 1,
+                            cursor: isRegistering ? 'not-allowed' : 'pointer'
+                        }}
+                        disabled={isRegistering}
+                    >
+                        {isRegistering ? '가입 처리 중...' : '가입하기'}
                     </button>
                 </form>
 

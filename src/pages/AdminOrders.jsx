@@ -257,6 +257,31 @@ const AdminOrders = () => {
                                     <div>
                                         <h4 style={{ color: '#94a3b8', marginBottom: '8px', fontSize: '0.9rem' }}>주문 일시</h4>
                                         <p style={{ margin: 0 }}>{new Date(order.createdAt).toLocaleString('ko-KR')}</p>
+                                        
+                                        <h4 style={{ color: '#94a3b8', marginTop: '16px', marginBottom: '8px', fontSize: '0.9rem' }}>주문 품목 및 요청 주소</h4>
+                                        <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                            {order.items && order.items.map((item, idx) => (
+                                                <li key={idx} style={{ padding: '8px', backgroundColor: 'rgba(0,0,0,0.2)', borderRadius: '6px' }}>
+                                                    <div style={{ fontWeight: 'bold' }}>{item.name} ({item.quantity}개)</div>
+                                                    {item.customAddress && (
+                                                        <div style={{ fontSize: '0.8rem', color: 'var(--primary)', marginTop: '4px' }}>
+                                                            주소: {item.customAddress} {item.specificAddress}
+                                                        </div>
+                                                    )}
+                                                    {item.idName ? (
+                                                        <div style={{ fontSize: '0.8rem', color: '#94a3b8', marginTop: '2px', whiteSpace: 'pre-wrap' }}>
+                                                            주민번호: {item.idName} | {item.idBirth} | {item.idAddress} | {item.idPhoto}
+                                                        </div>
+                                                    ) : (
+                                                        item.detailAddress && (
+                                                            <div style={{ fontSize: '0.8rem', color: '#94a3b8', marginTop: '2px', whiteSpace: 'pre-wrap' }}>
+                                                                상세: {item.detailAddress}
+                                                            </div>
+                                                        )
+                                                    )}
+                                                </li>
+                                            ))}
+                                        </ul>
                                     </div>
                                 </div>
                             </div>

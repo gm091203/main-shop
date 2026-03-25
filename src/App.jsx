@@ -5,7 +5,6 @@ import Home from './pages/Home';
 import Login from './pages/Login';
 import SignUp from './pages/SignUp';
 import ProductDetail from './pages/ProductDetail';
-import SignupPayment from './pages/SignupPayment';
 import MyPage from './pages/MyPage';
 import OrderStatus from './pages/OrderStatus';
 import AdminChat from './pages/AdminChat';
@@ -100,7 +99,6 @@ function App() {
           <Route index element={<Home />} />
           <Route path="login" element={<Login />} />
           <Route path="signup" element={<SignUp />} />
-          <Route path="signup/payment" element={<SignupPayment />} />
           <Route path="product/:id" element={<ProductDetail addToCart={addToCart} />} />
           <Route path="mypage" element={<MyPage />} />
           <Route path="orderstatus" element={<OrderStatus />} />
