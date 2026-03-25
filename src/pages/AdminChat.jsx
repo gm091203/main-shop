@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { db } from '../firebase';
-import { collection, query, where, orderBy, onSnapshot, doc, updateDoc, addDoc, getDocs, deleteDoc } from 'firebase/firestore';
+import { collection, getDocs, query, where, orderBy, doc, updateDoc, onSnapshot, addDoc, serverTimestamp, deleteDoc } from 'firebase/firestore';
 
 const AdminChat = () => {
     const [messages, setMessages] = useState([]);
@@ -15,44 +15,57 @@ const AdminChat = () => {
     const selectedChatUserIdRef = useRef(selectedChatUserId);
 
     useEffect(() => {
-        // 1. 유저 리스트 실시간 감시 (isAdmin이 아닌 유저만)
-        const qUsers = query(collection(db, 'users'), where('isAdmin', '!=', true));
-        const unsubscribeUsers = onSnapshot(qUsers, (snapshot) => {
-            const userList = [];
-            snapshot.forEach(doc => {
-                userList.push({ ...doc.data(), firebaseId: doc.id });
-            });
-            setUsers(userList);
-        });
+        const fetchUserListAndPreviews = async () => {
+            try {
+                // 단일 필드 where는 인덱스 없이도 작동함 (성능 개선)
+                const qUsers = query(collection(db, 'users'), where('isAdmin', '!=', true));
+                const userSnapshot = await getDocs(qUsers);
+                const userList = [];
+                userSnapshot.forEach(doc => {
+                    userList.push({ ...doc.data(), firebaseId: doc.id });
+                });
+                setUsers(userList);
 
-        // 2. 전체 채팅 미리보기용 실시간 감시
-        // 모든 메시지를 감시하며 유저별 마지막 메시지와 안읽은 개수 계산
-        const qAllChats = query(collection(db, 'chats'), orderBy('createdAt', 'desc'));
-        const unsubscribeAllChats = onSnapshot(qAllChats, (snapshot) => {
-            const previews = {};
-            snapshot.forEach(doc => {
-                const data = doc.data();
-                const uid = data.userId;
-                if (!uid) return;
+                // 전체 채팅을 매번 가져오지 않고 최근 50개 정도만 가져오거나 필터링 (여기서는 일단 유지하되 최적화 고려)
+                const chatSnapshot = await getDocs(collection(db, 'chats'));
+                const allChats = [];
+                chatSnapshot.forEach(doc => {
+                    allChats.push({ ...doc.data(), firebaseId: doc.id });
+                });
+                
+                // 메모리에서 최신순 정렬
+                allChats.sort((a, b) => {
+                    const tA = new Date(a.createdAt || 0).getTime();
+                    const tB = new Date(b.createdAt || 0).getTime();
+                    return (tB || 0) - (tA || 0);
+                });
 
-                if (!previews[uid]) {
-                    previews[uid] = {
-                        lastMessage: data.text,
-                        time: data.time,
-                        unreadCount: 0
-                    };
-                }
-                if (data.sender === 'user' && !data.isRead) {
-                    previews[uid].unreadCount += 1;
-                }
-            });
-            setChatsPreview(previews);
-        });
+                const previews = {};
+                allChats.forEach(data => {
+                    const uid = data.userId;
+                    if (!uid) return;
 
-        return () => {
-            unsubscribeUsers();
-            unsubscribeAllChats();
+                    if (!previews[uid]) {
+                        previews[uid] = {
+                            lastMessage: data.text,
+                            time: data.time,
+                            unreadCount: 0
+                        };
+                    }
+                    if (data.sender === 'user' && !data.isRead) {
+                        previews[uid].unreadCount += 1;
+                    }
+                });
+                setChatsPreview(previews);
+            } catch (error) {
+                console.error("Error fetching chat sidebar (V9):", error);
+                alert(`[관리자 사이드바 오류 V9] ${error.message}`);
+            }
         };
+
+        fetchUserListAndPreviews();
+        const interval = setInterval(fetchUserListAndPreviews, 8000); // 부하를 줄이기 위해 8초로 조정
+        return () => clearInterval(interval);
     }, []);
 
     // 3. 선택된 유저의 채팅 메시지 실시간 감시
@@ -62,29 +75,37 @@ const AdminChat = () => {
             return;
         }
 
-        const qActiveChat = query(
-            collection(db, 'chats'),
-            where('userId', '==', selectedChatUserId),
-            orderBy('createdAt', 'asc')
-        );
+        const fetchActiveMessages = async () => {
+            try {
+                // 단일 필드 where는 안전함
+                const q = query(collection(db, 'chats'), where('userId', '==', selectedChatUserId));
+                const snapshot = await getDocs(q);
+                const activeMsgs = [];
+                snapshot.forEach(doc => {
+                    // id 속성도 추가하여 key={msg.id} 오류 방지
+                    activeMsgs.push({ ...doc.data(), firebaseId: doc.id, id: doc.id });
+                });
+                
+                // 메모리 정렬 (오름차순)
+                activeMsgs.sort((a, b) => {
+                    const tA = new Date(a.createdAt || 0).getTime();
+                    const tB = new Date(b.createdAt || 0).getTime();
+                    return (tA || 0) - (tB || 0);
+                });
+                
+                setMessages(activeMsgs);
+            } catch (error) {
+                console.error("Error fetching active messages (V10):", error);
+                alert(`[관리자 메시지 로드 오류 V10] ${error.message}`);
+            }
+        };
 
-        const unsubscribeActive = onSnapshot(qActiveChat, (snapshot) => {
-            const activeMsgs = [];
-            snapshot.forEach(doc => {
-                activeMsgs.push({ ...doc.data(), firebaseId: doc.id });
-            });
-            setMessages(activeMsgs);
-        });
-
-        return () => unsubscribeActive();
+        fetchActiveMessages();
+        const interval = setInterval(fetchActiveMessages, 4000);
+        return () => clearInterval(interval);
     }, [selectedChatUserId]);
 
-    // Load active messages whenever selected chat user changes
-    useEffect(() => {
-        if (selectedChatUserId) {
-            loadMessages(selectedChatUserId);
-        }
-    }, [selectedChatUserId]);
+    // loadMessages(selectedChatUserId) 호출 제거 (fetchActiveMessages가 이미 수행 중)
 
     // 관리자가 채팅창을 열어 메시지를 확인하면 '읽음' 처리
     useEffect(() => {
@@ -132,11 +153,14 @@ const AdminChat = () => {
         };
 
         try {
-            await addDoc(collection(db, 'chats'), newMsg);
+            // 낙관적 업데이트
+            setMessages(prev => [...prev, { ...newMsg, id: Date.now().toString() }]);
             setInputValue('');
+
+            await addDoc(collection(db, 'chats'), newMsg);
         } catch (error) {
-            console.error("Error sending bot message:", error);
-            alert('메시지 전송 중 오류가 발생했습니다.');
+            console.error("Error sending bot message (V12):", error);
+            alert('[메시지 전송 오류 V12] 전송에 실패했습니다.');
         }
     };
 
@@ -194,10 +218,10 @@ const AdminChat = () => {
                     }}>
                         {/* Header removed based on user request */}
                         <div style={{ flex: 1, overflowY: 'auto', padding: '8px 0' }}>
-                            {customers.length === 0 ? (
+                            {users.length === 0 ? (
                                 <div style={{ padding: '30px', textAlign: 'center', color: '#64748b' }}>가입된 고객이 없습니다.</div>
                             ) : (
-                                customers.map(u => {
+                                users.map(u => {
                                     const uid = u.uid || u.id;
                                     const isSelected = selectedChatUserId === uid;
                                     const preview = chatsPreview[uid] || { lastMessage: '', time: '', unreadCount: 0 };

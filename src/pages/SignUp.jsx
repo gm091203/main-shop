@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { db } from '../firebase';
-import { collection, query, where, getDocs } from 'firebase/firestore';
+import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
 
 const SignUp = () => {
     const navigate = useNavigate();
@@ -18,6 +18,7 @@ const SignUp = () => {
     });
     const [isIdChecked, setIsIdChecked] = useState(false);
     const [idMessage, setIdMessage] = useState({ text: '', type: '' });
+    const [isCheckingId, setIsCheckingId] = useState(false);
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -36,20 +37,45 @@ const SignUp = () => {
             return;
         }
 
+        setIsCheckingId(true);
         try {
-            const q = query(collection(db, 'users'), where('id', '==', formData.id));
-            const querySnapshot = await getDocs(q);
+            const trimmedId = formData.id.trim();
+            let isTaken = false;
 
-            if (!querySnapshot.empty) {
+            // 전체 조회 프로세스 (직접 조회 + 폴백 쿼리)를 하나의 타임아웃으로 감싸기
+            await Promise.race([
+                (async () => {
+                    // 1단계: 문서 ID 직접 조회 (최적화)
+                    const userDocRef = doc(db, 'users', trimmedId);
+                    const userSnap = await getDoc(userDocRef);
+                    isTaken = userSnap.exists();
+
+                    // 2단계: 기존 랜덤 ID 방식 호환 (폴백)
+                    if (!isTaken) {
+                        const q = query(collection(db, 'users'), where('id', '==', trimmedId));
+                        const querySnapshot = await getDocs(q);
+                        isTaken = !querySnapshot.empty;
+                    }
+                })(),
+                new Promise((_, reject) => setTimeout(() => reject(new Error("TIMEOUT")), 10000))
+            ]);
+
+            if (isTaken) {
                 setIsIdChecked(false);
                 setIdMessage({ text: '이미 사용 중인 아이디입니다.', type: 'error' });
             } else {
                 setIsIdChecked(true);
                 setIdMessage({ text: '사용 가능한 아이디입니다.', type: 'success' });
             }
-        } catch (e) {
-            console.error("Failed to check ID duplication:", e);
-            alert('중복 확인 중 오류가 발생했습니다.');
+        } catch (error) {
+            console.error("ID Check Error (V11):", error);
+            if (error.message === "TIMEOUT") {
+                alert('중복 확인 중 응답 시간이 초과되었습니다. (V11)');
+            } else {
+                alert(`아이디 중복 확인 오류 [V11]: [${error.code || 'UNKNOWN'}] ${error.message}`);
+            }
+        } finally {
+            setIsCheckingId(false);
         }
     };
 
@@ -126,18 +152,19 @@ const SignUp = () => {
                             <button
                                 type="button"
                                 onClick={checkIdDuplication}
+                                disabled={isCheckingId}
                                 style={{
                                     padding: '0 15px',
-                                    backgroundColor: '#334155',
+                                    backgroundColor: isCheckingId ? '#64748b' : '#334155',
                                     color: 'white',
                                     border: 'none',
                                     borderRadius: '8px',
                                     fontSize: '0.85rem',
                                     fontWeight: 600,
-                                    cursor: 'pointer'
+                                    cursor: isCheckingId ? 'not-allowed' : 'pointer'
                                 }}
                             >
-                                중복 확인
+                                {isCheckingId ? '확인 중... (V6)' : '중복 확인'}
                             </button>
                         </div>
                         {idMessage.text && (

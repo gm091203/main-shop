@@ -1,10 +1,9 @@
 import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { db } from '../firebase';
-import { collection, addDoc, query, where, getDocs } from 'firebase/firestore';
+import { doc, getDoc, collection, query, where, getDocs, setDoc } from 'firebase/firestore';
 
 const SignupPayment = () => {
-    const [referralCode, setReferralCode] = useState('');
     const [statusMessage, setStatusMessage] = useState('');
     const [isProcessing, setIsProcessing] = useState(false);
     const navigate = useNavigate();
@@ -28,37 +27,38 @@ const SignupPayment = () => {
         setStatusMessage('가입 처리 중...');
 
         try {
+            if (!signupData || !signupData.id) {
+                throw new Error("가입 정보가 유효하지 않습니다.");
+            }
+            
             console.log("Starting signup process for ID:", signupData.id);
             
-            // 중복 아이디 최종 체크 (타임아웃 적용 고려)
-            const q = query(collection(db, 'users'), where('id', '==', signupData.id));
-            
-            // getDocs가 너무 오래 걸릴 경우를 대비해 10초 타임아웃
-            const querySnapshot = await Promise.race([
-                getDocs(q),
-                new Promise((_, reject) => setTimeout(() => reject(new Error("조회 시간 초과")), 10000))
+            // 중복 아이디 최종 체크
+            await Promise.race([
+                (async () => {
+                    const userDocRef = doc(db, 'users', signupData.id);
+                    const userSnap = await getDoc(userDocRef);
+                    if (userSnap.exists()) {
+                        throw new Error("ALREADY_EXISTS");
+                    }
+                })(),
+                new Promise((_, reject) => setTimeout(() => reject(new Error("TIMEOUT")), 10000))
             ]);
             
-            if (!querySnapshot.empty) {
-                alert('이미 존재하는 아이디입니다. 다른 아이디를 사용해주세요.');
-                setIsProcessing(false);
-                setStatusMessage('중복된 아이디입니다.');
-                return;
-            }
-
             // Firestore에 유저 정보 저장
             const newUser = {
                 ...signupData,
                 createdAt: new Date().toISOString(),
-                isAdmin: false 
+                isAdmin: false
             };
             
             delete newUser.passwordConfirm;
 
-            console.log("Saving user data to Firestore...");
+            const userDocRef = doc(db, 'users', signupData.id);
+            console.log("Saving user data to Firestore Lite...");
             await Promise.race([
-                addDoc(collection(db, 'users'), newUser),
-                new Promise((_, reject) => setTimeout(() => reject(new Error("저장 시간 초과")), 10000))
+                setDoc(userDocRef, newUser),
+                new Promise((_, reject) => setTimeout(() => reject(new Error("TIMEOUT")), 10000))
             ]);
 
             console.log("Signup successful!");
@@ -69,9 +69,18 @@ const SignupPayment = () => {
             }, 2000);
         } catch (error) {
             console.error("Critical Signup Error:", error);
-            alert(`회원가입 처리 중 오류가 발생했습니다: ${error.message}`);
+            if (error.message === "TIMEOUT") {
+                alert('처리 시간 초과 (V8)');
+            } else if (error.message === "ALREADY_EXISTS") {
+                alert('이미 존재하는 아이디입니다. 다른 아이디를 사용해주세요.');
+                setIsProcessing(false);
+                setStatusMessage('중복된 아이디입니다.');
+                return;
+            } else {
+                alert(`가입 처리 오류 [V8]: [${error.code || 'UNKNOWN'}] ${error.message}`);
+            }
             setIsProcessing(false);
-            setStatusMessage(`오류 발생: ${error.message}`);
+            setStatusMessage(`오류 발생: [${error.code || 'UNKNOWN'}]`);
         }
     };
 
@@ -88,17 +97,6 @@ const SignupPayment = () => {
                 </div>
 
                 <form onSubmit={handlePayment}>
-                    <div className="input-group" style={{ textAlign: 'left' }}>
-                        <label className="input-label">추천인 코드 (선택)</label>
-                        <input
-                            type="text"
-                            className="input-field"
-                            placeholder="추천인 코드가 있다면 입력해주세요"
-                            value={referralCode}
-                            onChange={(e) => setReferralCode(e.target.value)}
-                        />
-                    </div>
-
                     {statusMessage && (
                         <div style={{ marginTop: '16px', padding: '12px', borderRadius: '4px', backgroundColor: 'rgba(16, 185, 129, 0.2)', color: '#10B981', fontSize: '0.95rem', fontWeight: 500 }}>
                             {statusMessage}

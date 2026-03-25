@@ -1,5 +1,5 @@
 import { initializeApp } from "firebase/app";
-import { getFirestore } from "firebase/firestore";
+import { initializeFirestore } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
 
 const firebaseConfig = {
@@ -7,14 +7,16 @@ const firebaseConfig = {
   authDomain: "zeos-shop.firebaseapp.com",
   projectId: "zeos-shop",
   storageBucket: "zeos-shop.firebasestorage.app",
-  messagingSenderId: "16355169282",
-  appId: "1:16355169282:web:24aadc37026bd883b2c31b",
-  measurementId: "G-7242KHX0RR"
+  messagingSenderId: "547466107383",
+  appId: "1:547466107383:web:9f029a1b15fed71775fe9c"
 };
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
+const db = initializeFirestore(app, {
+  experimentalForceLongPolling: true,
+  useFetchStreams: false
+});
 const auth = getAuth(app);
 
-export { db, auth };
+export { app, db, auth };

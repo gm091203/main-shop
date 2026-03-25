@@ -1,25 +1,37 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { db } from '../firebase';
-import { collection, query, orderBy, onSnapshot, doc, updateDoc, deleteDoc, addDoc } from 'firebase/firestore';
+import { collection, query, orderBy, getDocs, doc, updateDoc, deleteDoc, addDoc } from 'firebase/firestore';
 
 const AdminOrders = () => {
     const [orders, setOrders] = useState([]);
+    const [isLoading, setIsLoading] = useState(true);
+    const [selectedOrder, setSelectedOrder] = useState(null);
 
-    useEffect(() => {
-        const q = query(collection(db, 'orders'), orderBy('createdAt', 'desc'));
-        
-        const unsubscribe = onSnapshot(q, (querySnapshot) => {
+    const fetchOrders = async () => {
+        setIsLoading(true);
+        try {
+            const q = query(collection(db, 'orders'), orderBy('createdAt', 'desc'));
+            const querySnapshot = await getDocs(q);
             const ordersData = [];
             querySnapshot.forEach((doc) => {
                 ordersData.push({ ...doc.data(), firebaseId: doc.id });
             });
             setOrders(ordersData);
-        }, (error) => {
-            console.error("Error fetching orders:", error);
-        });
+        } catch (error) {
+            console.error("AdminOrders Fetch Error (V11):", error);
+            if (error.code === 'permission-denied') {
+                alert("[접근 거부 V11] 관리자 권한이 없거나 로그인이 필요합니다. (Console: permission-denied)");
+            } else if (error.code) {
+                alert(`[주문 로드 오류 V11] Code: ${error.code}\nMessage: ${error.message}`);
+            }
+        } finally {
+            setIsLoading(false);
+        }
+    };
 
-        return () => unsubscribe();
+    useEffect(() => {
+        fetchOrders();
     }, []);
 
     const handleChangeStatus = async (orderFirebaseId, newStatus) => {
@@ -38,7 +50,7 @@ const AdminOrders = () => {
             };
             
             await addDoc(collection(db, 'notifications'), newNoti);
-
+            fetchOrders(); // 데이터 갱신
         } catch (error) {
             console.error('Failed to update order status:', error);
             alert('상태 변경 중 오류가 발생했습니다.');
@@ -50,6 +62,7 @@ const AdminOrders = () => {
 
         try {
             await deleteDoc(doc(db, 'orders', orderFirebaseId));
+            fetchOrders(); // 데이터 갱신
         } catch (error) {
             console.error('Failed to delete order:', error);
             alert('삭제 중 오류가 발생했습니다.');
@@ -90,9 +103,11 @@ const AdminOrders = () => {
                 </header>
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                    {orders.length === 0 ? (
+                    {isLoading ? (
+                        <div style={{ backgroundColor: '#1e293b', borderRadius: '12px', padding: '40px', textAlign: 'center', color: '#94a3b8', border: '1px solid #334155' }}>주문 내역을 불러오는 중입니다... (V14)</div>
+                    ) : orders.length === 0 ? (
                         <div style={{ backgroundColor: '#1e293b', borderRadius: '12px', padding: '40px', textAlign: 'center', color: '#94a3b8', border: '1px solid #334155' }}>
-                            아직 접수된 주문이 없습니다.
+                            접수된 주문이 없습니다.
                         </div>
                     ) : (
                         orders.map(order => (

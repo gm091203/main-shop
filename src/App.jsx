@@ -21,11 +21,17 @@ function App() {
 
   // 현재 사용자/비회원에 대한 장바구니 키 생성
   const getCartKey = () => {
-    const currentUserStr = sessionStorage.getItem('currentUser') || localStorage.getItem('currentUser');
-    if (currentUserStr) {
-      const currentUser = JSON.parse(currentUserStr);
-      const uid = currentUser.uid || currentUser.id;
-      return uid ? `cart_${uid}` : 'cart_guest';
+    try {
+      const currentUserStr = sessionStorage.getItem('currentUser') || localStorage.getItem('currentUser');
+      if (currentUserStr && currentUserStr !== 'undefined' && currentUserStr !== 'null') {
+        const currentUser = JSON.parse(currentUserStr);
+        if (currentUser) {
+          const uid = currentUser.uid || currentUser.id;
+          return uid ? `cart_${uid}` : 'cart_guest';
+        }
+      }
+    } catch (e) {
+      console.error("User info parse failed in getCartKey:", e);
     }
     return 'cart_guest';
   };

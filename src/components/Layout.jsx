@@ -1,19 +1,51 @@
 import { Outlet, useNavigate } from 'react-router-dom';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Header from './Header';
 import ChatWidget from './ChatWidget';
+import { db } from '../firebase';
+import { query, collection, where, onSnapshot } from 'firebase/firestore';
 
 const Layout = ({ cartItems = [], isCartOpen = false, setIsCartOpen, removeFromCart }) => {
     // 상품 총 수량
     const totalItems = cartItems.reduce((acc, item) => acc + item.quantity, 0);
     const [isChatOpen, setIsChatOpen] = useState(false);
     const navigate = useNavigate();
+    const [unreadCount, setUnreadCount] = useState(0);
 
     const handleCheckout = () => {
         if (cartItems.length === 0) return;
         setIsCartOpen(false);
         navigate('/checkout', { state: { items: cartItems } });
     };
+
+    useEffect(() => {
+        const currentUserStr = sessionStorage.getItem('currentUser') || localStorage.getItem('currentUser');
+        if (!currentUserStr) {
+            setUnreadCount(0);
+            return;
+        }
+        
+        try {
+            const currentUser = JSON.parse(currentUserStr);
+            const uid = currentUser.uid || currentUser.id;
+            if (!uid) return;
+
+            const q = query(
+                collection(db, 'chats'),
+                where('userId', '==', uid),
+                where('sender', '==', 'bot'),
+                where('isRead', '==', false)
+            );
+
+            const unsubscribe = onSnapshot(q, (snapshot) => {
+                setUnreadCount(snapshot.size);
+            });
+
+            return () => unsubscribe();
+        } catch (e) {
+            console.error("Unread listener error:", e);
+        }
+    }, [isChatOpen]);
 
     return (
         <div className="app-container">
@@ -23,12 +55,60 @@ const Layout = ({ cartItems = [], isCartOpen = false, setIsCartOpen, removeFromC
             </main>
             <footer style={{ textAlign: 'center', padding: '40px 20px', color: 'var(--text-muted)', fontSize: '0.9rem' }}>
                 <p>&copy; 2026 ZEO'S SHOP All rights reserved.</p>
-                <p>프리미엄 시크릿 셀렉트샵</p>
+                <p>프리미엄 시크릿 셀렉트샵 (V19)</p>
             </footer>
             {/* 이전 코드들... */}
             {/* ... */}
             {/* 장바구니 슬라이드 사이드 패널 내의 버튼 부분으로 바로 이동 */}
 
+            {/* 왼쪽 하단 고객센터 버튼 */}
+            <div
+                className="chat-floating-btn shadow-lg"
+                onClick={() => setIsChatOpen(true)}
+                style={{
+                    position: 'fixed',
+                    bottom: '30px',
+                    left: '30px',
+                    width: '60px',
+                    height: '60px',
+                    borderRadius: '50%',
+                    background: 'linear-gradient(135deg, #10B981, #059669)',
+                    color: 'white',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    cursor: 'pointer',
+                    zIndex: 9998,
+                    transition: 'transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)'
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.1)'}
+                onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+            >
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                </svg>
+                {unreadCount > 0 && (
+                    <span style={{
+                        position: 'absolute',
+                        top: '0px',
+                        right: '0px',
+                        background: '#EF4444',
+                        color: 'white',
+                        fontSize: '0.75rem',
+                        fontWeight: 'bold',
+                        width: '20px',
+                        height: '20px',
+                        borderRadius: '50%',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        border: '2px solid var(--surface)',
+                        boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
+                    }}>
+                        {unreadCount}
+                    </span>
+                )}
+            </div>
 
             {/* 플로팅 장바구니 버튼 */}
             <div
@@ -50,6 +130,8 @@ const Layout = ({ cartItems = [], isCartOpen = false, setIsCartOpen, removeFromC
                     zIndex: 9998,
                     transition: 'transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)'
                 }}
+                onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.1)'}
+                onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
             >
                 <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <circle cx="9" cy="21" r="1"></circle>

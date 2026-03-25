@@ -1,5 +1,7 @@
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useState, useEffect } from 'react';
+import { db } from '../firebase';
+import { doc, deleteDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import { dummyProducts } from '../pages/Home';
 import './Header.css';
 
@@ -34,29 +36,6 @@ const Header = ({ setIsChatOpen }) => {
     // 로그인 상태 중 하나라도 참이면 로그인됨
     const currentlyLoggedIn = sessionLoggedIn || localLoggedIn;
     setIsLoggedIn(currentlyLoggedIn);
-
-    // 관리자가 아닌데 현재 유저 정보가 sessionStorage에 있고 DB에서는 삭제된 경우 (예외처리)
-    if (sessionLoggedIn && !localLoggedIn) {
-      try {
-        const currentUserData = JSON.parse(sessionStorage.getItem('currentUser') || '{}');
-        const users = JSON.parse(localStorage.getItem('users') || '[]');
-
-        // 현재 세션의 유저가 DB에 없으면서 관리자가 아니면 강제 로그아웃
-        const userExists = users.some(u => u.uid === currentUserData.uid || u.id === currentUserData.id);
-
-        if (!userExists && currentUserData.id && !currentUserData.isAdmin) {
-          sessionStorage.removeItem('isLoggedIn');
-          sessionStorage.removeItem('currentUser');
-          setIsLoggedIn(false);
-          if (window.location.pathname !== '/' && !window.location.pathname.includes('/login') && !window.location.pathname.includes('/signup')) {
-            alert('유효하지 않은 계정입니다. 다시 로그인해주세요.');
-            navigate('/');
-          }
-        }
-      } catch (err) {
-        // parsing error ignore
-      }
-    }
   };
 
   useEffect(() => {
@@ -74,10 +53,32 @@ const Header = ({ setIsChatOpen }) => {
       checkLoginStatus();
     };
     window.addEventListener('localStorageChange', handleCustomStorageChange);
-    // Login.jsx에서 기본 storage 이벤트를 dispatch 하도록 만들어두었음
 
-    // 경로 변경 시 팝업 닫기 및 로그인 체크
-    setIsSettingsOpen(false);
+    // 4. 계정 유효성 체크 (강제 로그아웃 대응)
+    const verifyAccount = async () => {
+        try {
+            const currentUserStr = sessionStorage.getItem('currentUser') || localStorage.getItem('currentUser');
+            if (!currentUserStr || currentUserStr === 'undefined' || currentUserStr === 'null') return;
+            
+            const currentUser = JSON.parse(currentUserStr);
+            if (!currentUser) return;
+            
+            const uid = currentUser.uid || currentUser.id;
+            if (!uid || currentUser.isAdmin) return; // 관리자는 제외하거나 별도 처리
+
+            const userDoc = await getDocs(query(collection(db, 'users'), where('id', '==', currentUser.id)));
+            // Firestore Lite이므로 getDocs로 존재 여부 확인 (탈퇴 시 문동 삭제됨)
+            if (userDoc.empty) {
+                alert('계정 정보가 더 이상 유효하지 않습니다. 자동으로 로그아웃됩니다.');
+                handleLogout();
+            }
+        } catch (e) {
+            console.error("Account verification failed:", e);
+        }
+    };
+
+    // 경로 변경 시마다 체크
+    verifyAccount();
 
     return () => {
       window.removeEventListener('storage', handleStorageChange);

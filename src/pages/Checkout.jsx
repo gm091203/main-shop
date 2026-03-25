@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { db } from '../firebase';
-import { collection, addDoc } from 'firebase/firestore';
+import { collection, addDoc, query, where, getDocs, doc, updateDoc, increment } from 'firebase/firestore';
 import './Checkout.css';
 
 const Checkout = () => {
@@ -11,18 +11,13 @@ const Checkout = () => {
     // 단일 상품(바로구매) 또는 장바구니 상품들 처리
     const checkoutItems = location.state?.items || (location.state?.product ? [{ ...location.state.product, quantity: location.state.product.quantity || 1 }] : []);
 
-    const [selectedCoupon, setSelectedCoupon] = useState(null);
     const [isOrdered, setIsOrdered] = useState(false);
-
-    // Mock coupons data
-    const availableCoupons = [
-        { id: 'welcome30', name: '신규 가입 웰컴 쿠폰', type: 'percent', value: 30, desc: '첫 구매 고객을 위한 특별 할인' }
-    ];
 
     useEffect(() => {
         if (checkoutItems.length === 0) {
             alert('잘못된 접근입니다.');
             navigate('/');
+            return;
         }
     }, [checkoutItems, navigate]);
 
@@ -31,80 +26,73 @@ const Checkout = () => {
     // 상품 총 합계 계산 (할인 전)
     const subtotal = checkoutItems.reduce((acc, item) => acc + (item.price * item.quantity), 0);
 
-    const handleSelectCoupon = (coupon) => {
-        if (selectedCoupon?.id === coupon.id) {
-            setSelectedCoupon(null);
-        } else {
-            setSelectedCoupon(coupon);
-        }
-    };
-
-    const calculateDiscount = () => {
-        if (!selectedCoupon) return 0;
-        if (selectedCoupon.type === 'percent') {
-            return (subtotal * selectedCoupon.value) / 100;
-        }
-        return selectedCoupon.value;
-    };
-
-    const discount = calculateDiscount();
-    const finalPrice = subtotal - discount;
+    const deliveryFee = 5000;
+    const finalPrice = subtotal + deliveryFee;
 
     const handleCompletePayment = async () => {
+        const currentUserStr = sessionStorage.getItem('currentUser') || localStorage.getItem('currentUser');
+        const currentUser = currentUserStr ? JSON.parse(currentUserStr) : null;
+        const userName = currentUser ? currentUser.name : '비회원';
+        const orderId = Date.now().toString();
+
+        const orderSummaryTitle = checkoutItems.length > 1
+            ? `${checkoutItems[0].name} 외 ${checkoutItems.length - 1}건`
+            : checkoutItems[0].name;
+
+        const newOrder = {
+            id: orderId,
+            userInfo: currentUser,
+            items: checkoutItems,
+            orderSummaryTitle: orderSummaryTitle,
+            totalAmount: subtotal,
+            discountAmount: 0,
+            finalPrice: finalPrice,
+            status: '입금 대기중',
+            createdAt: new Date().toISOString()
+        };
+
+        const newNotification = {
+            id: orderId,
+            orderId: orderId,
+            type: 'ORDER',
+            message: `${userName} 고객님이 ${finalPrice.toLocaleString()}원을 주문하셨습니다. (입금 대기)`,
+            productName: orderSummaryTitle,
+            productPrice: subtotal,
+            discountAmount: 0,
+            finalPrice: finalPrice,
+            userInfo: currentUser,
+            items: checkoutItems,
+            time: new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' }),
+            createdAt: new Date().toISOString()
+        };
+
         try {
-            // Check both sessionStorage and localStorage for currentUser
-            const currentUserStr = sessionStorage.getItem('currentUser') || localStorage.getItem('currentUser');
-            const currentUser = currentUserStr ? JSON.parse(currentUserStr) : null;
-            const userName = currentUser ? currentUser.name : '비회원';
-            const orderId = Date.now().toString();
+            // 10초 타임아웃 적용
+            const timeoutPromise = new Promise((_, reject) => {
+                setTimeout(() => reject(new Error('TIMEOUT_ERROR')), 10000);
+            });
 
-            // 주문 상품명 요약 생성 (예: '상품A 외 2건' 또는 '상품A')
-            const orderSummaryTitle = checkoutItems.length > 1
-                ? `${checkoutItems[0].name} 외 ${checkoutItems.length - 1}건`
-                : checkoutItems[0].name;
+            // 주문과 알림 동시 저장
+            const tasks = [
+                addDoc(collection(db, 'orders'), newOrder),
+                addDoc(collection(db, 'notifications'), newNotification)
+            ];
 
-            const newOrder = {
-                id: orderId,
-                userInfo: currentUser, // 전체 유저 정보
-                items: checkoutItems, // 개별 상품 정보 (가격, 옵션, 수량)
-                orderSummaryTitle: orderSummaryTitle,
-                totalAmount: subtotal,
-                discountAmount: discount,
-                finalPrice: finalPrice,
-                status: '입금 대기중', // 초기 상태: 입금 대기중
-                createdAt: new Date().toISOString()
-            };
-
-            // 1. 주문 데이터 Firestore 저장
-            await addDoc(collection(db, 'orders'), newOrder);
-
-            // 2. 관리자 대시보드 알림용 Firestore 저장
-            const newNotification = {
-                id: orderId, // 주문 ID와 동일하게 설정
-                orderId: orderId,
-                type: 'ORDER',
-                message: `${userName} 고객님이 ${finalPrice.toLocaleString()}원을 주문하셨습니다. (입금 대기)`,
-                productName: orderSummaryTitle,
-                productPrice: subtotal,
-                discountAmount: discount,
-                finalPrice: finalPrice,
-                userInfo: currentUser,
-                items: checkoutItems,
-                time: new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' }),
-                createdAt: new Date().toISOString()
-            };
-
-            await addDoc(collection(db, 'notifications'), newNotification);
+            await Promise.race([
+                Promise.all(tasks),
+                timeoutPromise
+            ]);
 
             window.dispatchEvent(new Event('storage'));
+            setIsOrdered(true);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
         } catch (error) {
-            console.error('Failed to save order/notification to Firestore:', error);
-            alert('주문 처리 중 오류가 발생했습니다.');
-            return;
+            console.error('Failed to save order/notification (V19):', error);
+            const errorMsg = error.message === 'TIMEOUT_ERROR' 
+                ? '서버 응답 시간이 초과되었습니다. (네트워크 연결을 확인하세요)' 
+                : `주문 처리 실패: ${error.code || error.message}`;
+            alert(`[오류 V19] ${errorMsg}`);
         }
-
-        setIsOrdered(true);
-        window.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
     if (isOrdered) {
@@ -162,29 +150,6 @@ const Checkout = () => {
                         </div>
                     </div>
 
-                    {/* Coupon Section */}
-                    <div className="checkout-section">
-                        <h2 className="checkout-title">사용 가능 쿠폰</h2>
-                        <div className="coupon-list">
-                            {availableCoupons.map((coupon) => (
-                                <div
-                                    key={coupon.id}
-                                    className={`coupon-card ${selectedCoupon?.id === coupon.id ? 'selected' : ''}`}
-                                    onClick={() => handleSelectCoupon(coupon)}
-                                >
-                                    <div className="coupon-info">
-                                        <div className="coupon-badge">WELCOME</div>
-                                        <h4>{coupon.name}</h4>
-                                        <p>{coupon.desc}</p>
-                                    </div>
-                                    <div className="coupon-amount">
-                                        {coupon.type === 'percent' ? `${coupon.value}%` : `${coupon.value.toLocaleString()}원`}
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-
                     {/* Payment Info */}
                     <div className="checkout-section">
                         <h2 className="checkout-title">결제 안내</h2>
@@ -203,13 +168,9 @@ const Checkout = () => {
                             <span>상품 총 금액</span>
                             <span>{subtotal.toLocaleString()}원</span>
                         </div>
-                        <div className="price-row discount">
-                            <span>쿠폰 할인</span>
-                            <span>-{discount.toLocaleString()}원</span>
-                        </div>
                         <div className="price-row">
                             <span>배송비</span>
-                            <span>무료</span>
+                            <span>{deliveryFee.toLocaleString()}원</span>
                         </div>
                         <div className="price-row total" style={{ marginTop: '16px', paddingTop: '16px', borderTop: '1px solid var(--border)' }}>
                             <span>총 결제 금액</span>
@@ -221,7 +182,7 @@ const Checkout = () => {
                             style={{ width: '100%', marginTop: '24px', padding: '16px', fontSize: '1.1rem' }}
                             onClick={handleCompletePayment}
                         >
-                            {finalPrice.toLocaleString()}원 결제하기
+                            {finalPrice.toLocaleString()}원 결제하기 (V19)
                         </button>
                     </div>
                 </div>

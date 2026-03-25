@@ -1,24 +1,39 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { db } from '../firebase';
-import { collection, query, onSnapshot, doc, deleteDoc, getDocs, where } from 'firebase/firestore';
+import { collection, getDocs, doc, updateDoc, deleteDoc, query, orderBy, where } from 'firebase/firestore';
 
 const AdminUsers = () => {
     const [users, setUsers] = useState([]);
+    const [isLoading, setIsLoading] = useState(true);
     const [selectedUser, setSelectedUser] = useState(null);
+    const [searchTerm, setSearchTerm] = useState(''); // 누락된 상태 추가
     const navigate = useNavigate();
 
-    useEffect(() => {
-        const q = query(collection(db, 'users'));
-        const unsubscribe = onSnapshot(q, (snapshot) => {
+    const fetchUsers = async () => {
+        setIsLoading(true);
+        try {
+            const q = query(collection(db, 'users'));
+            const snapshot = await getDocs(q);
             const userList = [];
             snapshot.forEach(doc => {
                 userList.push({ ...doc.data(), firebaseId: doc.id });
             });
             setUsers(userList);
-        });
+        } catch (error) {
+            console.error("AdminUsers Fetch Error (V11):", error);
+            if (error.code === 'permission-denied') {
+                alert("[접근 거부 V11] 관리자 권한이 없거나 로그인이 필요합니다. (Console: permission-denied)");
+            } else if (error.code) {
+                alert(`[사용자 로드 오류 V11] Code: ${error.code}\nMessage: ${error.message}`);
+            }
+        } finally {
+            setIsLoading(false);
+        }
+    };
 
-        return () => unsubscribe();
+    useEffect(() => {
+        fetchUsers();
     }, []);
 
     const handleDeleteUser = async (userFirebaseId) => {
@@ -46,6 +61,7 @@ const AdminUsers = () => {
 
                 setSelectedUser(null);
                 alert('회원 탈퇴 처리가 완료되었습니다.');
+                fetchUsers(); // Refresh the user list after deletion
 
             } catch (e) {
                 console.error("Failed to delete user:", e);
@@ -91,6 +107,29 @@ const AdminUsers = () => {
                     </div>
                 </header>
 
+                {/* Search Bar */}
+                <div style={{ marginBottom: '24px' }}>
+                    <div style={{ position: 'relative', maxWidth: '400px' }}>
+                        <input
+                            type="text"
+                            placeholder="이름 또는 아이디로 검색..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            style={{
+                                width: '100%',
+                                padding: '12px 16px 12px 40px',
+                                backgroundColor: '#0f172a',
+                                border: '1px solid #334155',
+                                borderRadius: '8px',
+                                color: 'white',
+                                outline: 'none',
+                                fontSize: '0.95rem'
+                            }}
+                        />
+                        <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#64748b' }}>🔍</span>
+                    </div>
+                </div>
+
                 <div style={{
                     backgroundColor: '#1e293b',
                     borderRadius: '16px',
@@ -98,64 +137,73 @@ const AdminUsers = () => {
                     border: '1px solid #334155',
                     minHeight: '400px'
                 }}>
-                    <div style={{ overflowX: 'auto' }}>
-                        <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
-                            <thead>
-                                <tr style={{ borderBottom: '2px solid #334155' }}>
-                                    <th style={{ padding: '16px', color: '#94a3b8', fontWeight: 600 }}>이름</th>
-                                    <th style={{ padding: '16px', color: '#94a3b8', fontWeight: 600 }}>아이디</th>
-                                    <th style={{ padding: '16px', color: '#94a3b8', fontWeight: 600 }}>연락처</th>
-                                    <th style={{ padding: '16px', color: '#94a3b8', fontWeight: 600 }}>주소</th>
-                                    <th style={{ padding: '16px', color: '#94a3b8', fontWeight: 600, textAlign: 'center' }}>상세</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {users.length > 0 ? (
-                                    users.map((user, idx) => (
-                                        <tr
-                                            key={user.firebaseId || idx}
-                                            style={{
-                                                borderBottom: '1px solid #334155',
-                                                transition: 'background 0.2s'
-                                            }}
-                                            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.03)'}
-                                            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                                        >
-                                            <td style={{ padding: '16px', color: 'white', fontWeight: 500 }}>{user.name}</td>
-                                            <td style={{ padding: '16px', color: '#cbd5e1' }}>{user.id}</td>
-                                            <td style={{ padding: '16px', color: '#cbd5e1' }}>{user.phone || '미입력'}</td>
-                                            <td style={{ padding: '16px', color: '#e2e8f0' }}>{user.address || '정보 없음'}</td>
-                                            <td style={{ padding: '16px', textAlign: 'center' }}>
-                                                <button
-                                                    onClick={() => setSelectedUser(user)}
+                    {isLoading ? (
+                        <div style={{ textAlign: 'center', padding: '60px', color: '#64748b' }}>고객 정보를 불러오는 중입니다... (V14)</div>
+                    ) : (
+                        <div style={{ overflowX: 'auto' }}>
+                            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+                                <thead>
+                                    <tr style={{ borderBottom: '2px solid #334155' }}>
+                                        <th style={{ padding: '16px', color: '#94a3b8', fontWeight: 600 }}>이름</th>
+                                        <th style={{ padding: '16px', color: '#94a3b8', fontWeight: 600 }}>아이디</th>
+                                        <th style={{ padding: '16px', color: '#94a3b8', fontWeight: 600 }}>연락처</th>
+                                        <th style={{ padding: '16px', color: '#94a3b8', fontWeight: 600 }}>주소</th>
+                                        <th style={{ padding: '16px', color: '#94a3b8', fontWeight: 600, textAlign: 'center' }}>상세</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {users.filter(u => 
+                                        u.name?.includes(searchTerm) || 
+                                        u.id?.includes(searchTerm)
+                                    ).length > 0 ? (
+                                        users
+                                            .filter(u => u.name?.includes(searchTerm) || u.id?.includes(searchTerm))
+                                            .map((user, idx) => (
+                                                <tr
+                                                    key={user.firebaseId || idx}
                                                     style={{
-                                                        backgroundColor: '#334155',
-                                                        color: 'white',
-                                                        border: 'none',
-                                                        padding: '6px 16px',
-                                                        borderRadius: '6px',
-                                                        cursor: 'pointer',
-                                                        fontSize: '0.9rem',
+                                                        borderBottom: '1px solid #334155',
                                                         transition: 'background 0.2s'
                                                     }}
-                                                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--primary)'}
-                                                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#334155'}
+                                                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.03)'}
+                                                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                                                 >
-                                                    정보 보기
-                                                </button>
+                                                    <td style={{ padding: '16px', color: 'white', fontWeight: 500 }}>{user.name}</td>
+                                                    <td style={{ padding: '16px', color: '#cbd5e1' }}>{user.id}</td>
+                                                    <td style={{ padding: '16px', color: '#cbd5e1' }}>{user.phone || '미입력'}</td>
+                                                    <td style={{ padding: '16px', color: '#e2e8f0' }}>{user.address || '정보 없음'}</td>
+                                                    <td style={{ padding: '16px', textAlign: 'center' }}>
+                                                        <button
+                                                            onClick={() => setSelectedUser(user)}
+                                                            style={{
+                                                                backgroundColor: '#334155',
+                                                                color: 'white',
+                                                                border: 'none',
+                                                                padding: '6px 16px',
+                                                                borderRadius: '6px',
+                                                                cursor: 'pointer',
+                                                                fontSize: '0.9rem',
+                                                                transition: 'background 0.2s'
+                                                            }}
+                                                            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--primary)'}
+                                                            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#334155'}
+                                                        >
+                                                            정보 보기
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                            ))
+                                    ) : (
+                                        <tr>
+                                            <td colSpan="5" style={{ padding: '40px', textAlign: 'center', color: '#64748b' }}>
+                                                {searchTerm ? '검색 결과가 없습니다.' : '등록된 회원이 없습니다.'}
                                             </td>
                                         </tr>
-                                    ))
-                                ) : (
-                                    <tr>
-                                        <td colSpan="5" style={{ padding: '40px', textAlign: 'center', color: '#64748b' }}>
-                                            등록된 회원이 없습니다.
-                                        </td>
-                                    </tr>
-                                )}
-                            </tbody>
-                        </table>
-                    </div>
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
+                    )}
                 </div>
             </div>
 

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { db } from '../firebase';
-import { collection, query, onSnapshot, orderBy, limit, where } from 'firebase/firestore';
+import { collection, getDocs, query, orderBy, limit, where } from 'firebase/firestore';
 
 const AdminDashboard = () => {
     const [activeChatCount, setActiveChatCount] = useState(0);
@@ -10,47 +10,67 @@ const AdminDashboard = () => {
     const [pendingOrderCount, setPendingOrderCount] = useState(0); // 입금 대기중 건수
     const [notifications, setNotifications] = useState([]); // 최근 주문 목록
     const [selectedNotification, setSelectedNotification] = useState(null);
+    const [isLoading, setIsLoading] = useState(true);
     const navigate = useNavigate();
 
     useEffect(() => {
-        // 1. 유저 수 실시간 감시
-        const unsubscribeUsers = onSnapshot(collection(db, 'users'), (snapshot) => {
-            setUserCount(snapshot.size);
-        });
+        const fetchData = async () => {
+            // 처음 로딩 시에만 true로 설정 (자동 갱신 시에는 깜빡임 방지)
+            try {
+                // 1. 유저 수 조회
+                const userSnapshot = await getDocs(collection(db, 'users'));
+                setUserCount(userSnapshot.size);
 
-        // 2. 안 읽은 채팅 고객 수 감시 (상담 관리용)
-        const qChats = query(collection(db, 'chats'), where('sender', '==', 'user'), where('isRead', '==', false));
-        const unsubscribeChats = onSnapshot(qChats, (snapshot) => {
-            // 같은 유저의 메시지는 하나로 카운트해야 함
-            const uniqueUsers = new Set();
-            snapshot.forEach(doc => {
-                uniqueUsers.add(doc.data().userId || doc.data().userName);
-            });
-            setActiveChatCount(uniqueUsers.size);
-        });
+                // 2. 안 읽은 채팅 고객 수 조회 (인덱스 방지: 단일 필드 쿼리 후 메모리 필터링)
+                const qChats = query(collection(db, 'chats'), where('isRead', '==', false));
+                const chatSnapshot = await getDocs(qChats);
+                const uniqueUsers = new Set();
+                chatSnapshot.forEach(doc => {
+                    const data = doc.data();
+                    if (data.sender === 'user') {
+                        uniqueUsers.add(data.userId || data.userName);
+                    }
+                });
+                setActiveChatCount(uniqueUsers.size);
 
-        // 3. 최신 주문 및 통계 감시
-        const qOrders = query(collection(db, 'orders'), orderBy('createdAt', 'desc'));
-        const unsubscribeOrders = onSnapshot(qOrders, (snapshot) => {
-            const ordersList = [];
-            let pending = 0;
-            snapshot.forEach(doc => {
-                const data = doc.data();
-                ordersList.push({ ...data, firebaseId: doc.id });
-                if (data.status === '입금 대기중' || !data.status) {
-                    pending++;
+                // 3. 최신 주문 및 통계 조회 (인덱스 방지)
+                const qOrders = query(collection(db, 'orders'));
+                const orderSnapshot = await getDocs(qOrders);
+                const ordersList = [];
+                orderSnapshot.forEach(doc => {
+                    ordersList.push({ ...doc.data(), firebaseId: doc.id });
+                });
+
+                // 메모리에서 최신순 정렬
+                ordersList.sort((a, b) => {
+                    const tA = new Date(a.createdAt || 0).getTime();
+                    const tB = new Date(b.createdAt || 0).getTime();
+                    return (tB || 0) - (tA || 0);
+                });
+
+                let pending = 0;
+                ordersList.forEach(data => {
+                    if (data.status === '입금 대기중' || !data.status) {
+                        pending++;
+                    }
+                });
+                setTotalNotificationCount(ordersList.length);
+                setNotifications(ordersList.slice(0, 5));
+                setPendingOrderCount(pending);
+            } catch (error) {
+                console.error("Dashboard Fetch Error (V14):", error);
+                if (error.code === 'permission-denied') {
+                    console.warn("권한이 없습니다. (로그인 필요)");
                 }
-            });
-            setTotalNotificationCount(ordersList.length);
-            setNotifications(ordersList.slice(0, 5));
-            setPendingOrderCount(pending);
-        });
-
-        return () => {
-            unsubscribeUsers();
-            unsubscribeChats();
-            unsubscribeOrders();
+            } finally {
+                setIsLoading(false);
+            }
         };
+
+        fetchData();
+        // 5초마다 자동 갱신 (선택 사항)
+        const interval = setInterval(fetchData, 5000);
+        return () => clearInterval(interval);
     }, []);
 
     return (
@@ -82,10 +102,10 @@ const AdminDashboard = () => {
                         <p style={{ color: '#94a3b8', fontSize: '0.9rem', marginBottom: '24px' }}>아직 읽지 않은 메시지가 있는 고객 수</p>
 
                         <div style={{ display: 'flex', alignItems: 'flex-end', gap: '12px', marginBottom: '24px' }}>
-                            <span style={{ fontSize: '3rem', fontWeight: 800, color: 'var(--primary)', lineHeight: 1 }}>
-                                {activeChatCount}
+                            <span style={{ fontSize: isLoading ? '1.5rem' : '3.1rem', fontWeight: 800, color: 'var(--primary)', lineHeight: 1 }}>
+                                {isLoading ? '로딩 중...' : activeChatCount}
                             </span>
-                            <span style={{ fontSize: '1.1rem', color: '#94a3b8', paddingBottom: '6px' }}>명</span>
+                            {!isLoading && <span style={{ fontSize: '1.1rem', color: '#94a3b8', paddingBottom: '6px' }}>명</span>}
                         </div>
 
                         <div style={{ flex: 1 }}></div>
@@ -122,10 +142,10 @@ const AdminDashboard = () => {
                         <p style={{ color: '#94a3b8', fontSize: '0.9rem', marginBottom: '24px' }}>시스템에 등록된 총 사용자 수</p>
 
                         <div style={{ display: 'flex', alignItems: 'flex-end', gap: '12px', marginBottom: '24px' }}>
-                            <span style={{ fontSize: '3rem', fontWeight: 800, color: '#10b981', lineHeight: 1 }}>
-                                {userCount}
+                            <span style={{ fontSize: isLoading ? '1.5rem' : '3.1rem', fontWeight: 800, color: '#10b981', lineHeight: 1 }}>
+                                {isLoading ? '로딩 중...' : userCount}
                             </span>
-                            <span style={{ fontSize: '1.1rem', color: '#94a3b8', paddingBottom: '6px' }}>명 등록됨</span>
+                            {!isLoading && <span style={{ fontSize: '1.1rem', color: '#94a3b8', paddingBottom: '6px' }}>명 등록됨</span>}
                         </div>
 
                         <div style={{ flex: 1 }}></div>

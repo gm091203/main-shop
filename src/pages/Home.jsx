@@ -3,12 +3,12 @@ import { useNavigate } from 'react-router-dom';
 import ProductCard from '../components/ProductCard';
 
 export const dummyProducts = [
-    { id: 1, name: 'FAKE 가라판', price: 50000, color: '#374151' },
+    { id: 1, name: 'FAKE 가라판', price: 260000, color: '#374151' },
     { id: 2, name: '전자 담배', price: 80000, color: '#1F2937' },
-    { id: 3, name: 'FAKE 실제 신분증', price: 150000, color: '#4B5563' },
+    { id: 3, name: 'FAKE 실제 신분증', price: 200000, color: '#4B5563' },
     { id: 4, name: '담배', price: 4500, color: '#111827' },
     { id: 5, name: '전자 담배 액상', price: 35000, color: '#6B7280' },
-    { id: 6, name: 'FAKE 핸드폰 신분증', price: 120000, color: '#4B5563' },
+    { id: 6, name: 'FAKE 핸드폰 신분증', price: 100000, color: '#4B5563' },
     { id: 7, name: 'FAKE 운전 면허증', price: 200000, color: '#374151' },
     { id: 8, name: '주류', price: 15000, color: '#1F2937' },
 ];
@@ -86,8 +86,8 @@ const Home = () => {
                         alignItems: 'center',
                         scrollSnapAlign: 'start'
                     }}>
-                        <h2 style={{ fontSize: '2.5rem', fontWeight: 800, marginBottom: '16px', letterSpacing: '-1px' }}>첫 구매 특별 혜택</h2>
-                        <p style={{ fontSize: '1.2rem', opacity: 0.9, marginBottom: '32px' }}>지금 가입하시면 즉시 사용 가능한 <strong style={{ color: '#fff' }}>30% 할인 쿠폰</strong>을 드립니다!</p>
+                        <h2 style={{ fontSize: '2.5rem', fontWeight: 800, marginBottom: '16px', letterSpacing: '-1px' }}>프리미엄 셀렉트샵 ZEO'S</h2>
+                        <p style={{ fontSize: '1.2rem', opacity: 0.9, marginBottom: '32px' }}>회원가입 시 즉시 <strong style={{ color: '#fff' }}>VIP 멤버십 혜택</strong>을 누리실 수 있습니다.</p>
                         <button 
                             className="btn btn-outline" 
                             style={{ fontWeight: 800, borderColor: 'white', color: 'white', fontSize: '1.1rem', padding: '12px 32px', width: 'auto' }} 
@@ -95,7 +95,7 @@ const Home = () => {
                             onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = 'white'; }}
                             onClick={() => navigate('/signup')}
                         >
-                            쿠폰 받고 시작하기
+                            멤버십 가입하기
                         </button>
                     </section>
 
