@@ -12,6 +12,7 @@ const Checkout = () => {
     const checkoutItems = location.state?.items || (location.state?.product ? [{ ...location.state.product, quantity: location.state.product.quantity || 1 }] : []);
 
     const [isOrdered, setIsOrdered] = useState(false);
+    const [agreed, setAgreed] = useState(false);
 
     useEffect(() => {
         if (checkoutItems.length === 0) {
@@ -30,6 +31,11 @@ const Checkout = () => {
     const finalPrice = subtotal + deliveryFee;
 
     const handleCompletePayment = async () => {
+        if (!agreed) {
+            alert('구매 이용 가이드 및 환불 제한에 대한 경고문에 동의하셔야 결제가 가능합니다.');
+            return;
+        }
+
         const currentUserStr = sessionStorage.getItem('currentUser') || localStorage.getItem('currentUser');
         const currentUser = currentUserStr ? JSON.parse(currentUserStr) : null;
         const userName = currentUser ? currentUser.name : '비회원';
@@ -175,6 +181,61 @@ const Checkout = () => {
                         <div className="price-row total" style={{ marginTop: '16px', paddingTop: '16px', borderTop: '1px solid var(--border)' }}>
                             <span>총 결제 금액</span>
                             <span style={{ color: 'var(--primary)', fontSize: '1.5rem' }}>{finalPrice.toLocaleString()}원</span>
+                        </div>
+
+                        {/* [구매 이용 가이드 및 환불 제한에 대한 경고문] */}
+                        <div style={{
+                            marginTop: '24px',
+                            padding: '16px',
+                            backgroundColor: '#f8fafc',
+                            border: '1px solid #e2e8f0',
+                            borderRadius: '12px',
+                            fontSize: '0.85rem',
+                            color: '#475569',
+                            maxHeight: '250px',
+                            overflowY: 'auto',
+                            lineHeight: '1.6',
+                            textAlign: 'left'
+                        }}>
+                            <h4 style={{ fontWeight: 700, color: '#1e293b', marginBottom: '12px', fontSize: '0.95rem' }}>
+                                [구매 이용 가이드 및 환불 제한에 대한 경고문]
+                            </h4>
+                            <p style={{ marginBottom: '12px' }}>
+                                본 서비스에서 상품을 구매하시는 고객님께서는 원활한 거래를 위해 아래의 <strong>[구매 및 환불 주의사항]</strong>을 반드시 확인해 주시기 바랍니다.
+                            </p>
+                            
+                            <div style={{ marginBottom: '12px' }}>
+                                <strong style={{ color: '#334155', display: 'block', marginBottom: '4px' }}>1. 구매 시 주의사항</strong>
+                                • <strong>배송 정보 확인:</strong> 고객님의 입력 오류로 인한 오배송 및 사고에 대한 책임은 구매자에게 있습니다.<br/>
+                                • <strong>추가 요금 안내:</strong> 제주도 및 도서산간 지역은 별도의 <strong>특수 지역 배송비</strong>가 발생합니다. 설치가 필요한 대형 가전/가구 등의 경우 현장 상황에 따라 <strong>추가 공임비(사다리차 등)</strong>가 청구될 수 있습니다.
+                            </div>
+
+                            <div style={{ marginBottom: '12px' }}>
+                                <strong style={{ color: '#334155', display: 'block', marginBottom: '4px' }}>2. 환불에 대한 주의사항</strong>
+                                • <strong>청약 철회:</strong> 상품 특성상 [1:1 주문 제작 / 재판매가 불가능한 소모성 자재 / 개봉 시 가치가 훼손되는 상품] 청약철회(환불)은 불가 합니다. 구매전 꼼꼼한 상품 확인과 배송지 확인 부탁드립니다.
+                            </div>
+
+                            <div style={{ marginBottom: '12px' }}>
+                                <strong style={{ color: '#334155', display: 'block', marginBottom: '4px' }}>3. 부정 행위 및 법적 책임</strong>
+                                • <strong>상습 반품 및 업무 방해:</strong> 정당한 사유 없는 상습적인 반품이나 허위 리뷰 작성으로 업무를 방해할 경우 서비스 이용이 제한될 수 있습니다.<br/>
+                                • <strong>저작권 침해:</strong> 사이트 내 이미지와 콘텐츠를 무단 복제 및 상업적으로 이용하는 행위는 법적 처벌 대상입니다.
+                            </div>
+
+                            <p style={{ marginTop: '8px', fontWeight: 600, color: '#dc2626' }}>
+                                ※ 환불 불가 규정을 인지하지 못해 발생하는 불이익에 대해서는 판매자가 책임지지 않으며, 부당한 요구 시 법적 조치가 취해질 수 있습니다.
+                            </p>
+                        </div>
+
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '16px', cursor: 'pointer', textAlign: 'left' }} onClick={() => setAgreed(!agreed)}>
+                            <input 
+                                type="checkbox" 
+                                checked={agreed} 
+                                onChange={(e) => setAgreed(e.target.checked)}
+                                style={{ width: '18px', height: '18px', cursor: 'pointer' }}
+                            />
+                            <span style={{ fontSize: '0.9rem', fontWeight: 500, color: '#334155' }}>
+                                위 주의사항을 모두 확인하였으며, 이에 동의합니다.
+                            </span>
                         </div>
 
                         <button
