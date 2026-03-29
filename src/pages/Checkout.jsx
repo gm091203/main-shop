@@ -173,26 +173,36 @@ const Checkout = () => {
                                             <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>수량: {item.quantity}개</p>
                                             <p style={{ fontWeight: 600 }}>{(item.price * item.quantity).toLocaleString()}원</p>
                                         </div>
-                                        {(item.customAddress || item.detailAddress || item.idName) && (
+                                        {item.customAddress && (
                                             <div style={{ marginTop: '8px', padding: '10px', backgroundColor: 'rgba(234, 88, 12, 0.05)', borderRadius: '6px', borderLeft: '3px solid var(--primary)' }}>
-                                                {item.customAddress && (
-                                                    <p style={{ fontSize: '0.85rem', color: 'var(--text-main)', wordBreak: 'break-all' }}>
-                                                        <strong style={{ color: 'var(--primary)' }}>배송 주소:</strong> {item.customAddress} {item.specificAddress}
-                                                    </p>
-                                                )}
-                                                {(item.detailAddress || item.idName) && (
-                                                    <p style={{ fontSize: '0.85rem', color: 'var(--text-main)', wordBreak: 'break-all', marginTop: item.customAddress ? '4px' : '0' }}>
-                                                        {item.idName ? (
-                                                            <>
-                                                                <strong style={{ color: '#94a3b8' }}>주민번호 정보:</strong> {item.idName} / {item.idBirth} / {item.idAddress} / {item.idPhoto || '사진 없음'}
-                                                            </>
-                                                        ) : (
-                                                            <>
-                                                                <strong style={{ color: '#94a3b8' }}>상세 정보:</strong> {item.detailAddress}
-                                                            </>
-                                                        )}
-                                                    </p>
-                                                )}
+                                                <p style={{ fontSize: '0.85rem', color: 'var(--text-main)', wordBreak: 'break-all' }}>
+                                                    <strong style={{ color: 'var(--primary)' }}>요청 주소:</strong> {item.customAddress}
+                                                </p>
+                                            </div>
+                                        )}
+                                        {item.idName && (
+                                            <div style={{ marginTop: '8px', padding: '12px', backgroundColor: 'rgba(234, 88, 12, 0.08)', borderRadius: '8px', borderLeft: '4px solid var(--primary)' }}>
+                                                <p style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--primary)', marginBottom: '8px' }}>신분증 정보</p>
+                                                <div style={{ fontSize: '0.85rem', display: 'grid', gap: '4px', color: 'var(--text-main)' }}>
+                                                    <p><strong>이름:</strong> {item.idName}</p>
+                                                    <p><strong>주민번호:</strong> {item.idBirth}</p>
+                                                    <p><strong>주소:</strong> {item.idAddress}</p>
+                                                    <p><strong>사진:</strong> {item.idPhoto || '업로드되지 않음'}</p>
+                                                </div>
+                                            </div>
+                                        )}
+                                        {item.vapeBrand && (
+                                            <div style={{ marginTop: '8px', padding: '12px', backgroundColor: 'rgba(16, 185, 129, 0.08)', borderRadius: '8px', borderLeft: '4px solid #10b981' }}>
+                                                <p style={{ fontSize: '0.85rem', color: 'var(--text-main)' }}>
+                                                    <strong style={{ color: '#10b981' }}>선택 모델:</strong> {item.vapeBrand} {item.vapeModel ? `/ ${item.vapeModel}` : ''}
+                                                </p>
+                                            </div>
+                                        )}
+                                        {item.detailAddress && !item.idName && (
+                                            <div style={{ marginTop: '8px', padding: '10px', backgroundColor: 'rgba(255, 255, 255, 0.05)', borderRadius: '6px' }}>
+                                                <p style={{ fontSize: '0.85rem', color: 'var(--text-main)' }}>
+                                                    <strong style={{ color: 'var(--text-muted)' }}>상세 정보:</strong> {item.detailAddress}
+                                                </p>
                                             </div>
                                         )}
                                     </div>

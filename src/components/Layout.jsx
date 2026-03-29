@@ -55,6 +55,10 @@ const Layout = ({ cartItems = [], isCartOpen = false, setIsCartOpen, removeFromC
             </main>
             <footer style={{ textAlign: 'center', padding: '40px 20px', color: 'var(--text-muted)', fontSize: '0.9rem' }}>
                 <p>&copy; 2026 ZEO'S SHOP All rights reserved.</p>
+                <div style={{ marginTop: '12px', marginBottom: '12px', opacity: 0.8 }}>
+                    <p style={{ marginBottom: '4px' }}>고객센터 운영안내</p>
+                    <p>평일: 오후 5시 ~ 오후 10시 / 주말: 오후 12시 ~ 오후 10시</p>
+                </div>
                 <p>프리미엄 시크릿 셀렉트샵 (V19)</p>
             </footer>
             {/* 이전 코드들... */}

@@ -18,12 +18,15 @@ const ProductDetail = ({ addToCart }) => {
     const [idBirth, setIdBirth] = useState('');
     const [idAddress, setIdAddress] = useState(''); // Address on ID
     const [idPhoto, setIdPhoto] = useState(null);
+    const [vapeBrand, setVapeBrand] = useState('');
+    const [vapeModel, setVapeModel] = useState('');
+    const [vapePrice, setVapePrice] = useState(0);
 
     useEffect(() => {
-        if (location.state?.openSettings) {
+        if (location.state?.openSettings || (product && (product.name.includes('전자 담배') || product.name.includes('액상') || product.name.includes('주류') || product.name === '담배'))) {
             setShowDetailInput(true);
         }
-    }, [location.state]);
+    }, [location.state, product]);
 
     if (!product) {
         return (
@@ -34,9 +37,45 @@ const ProductDetail = ({ addToCart }) => {
     }
 
     const isIdProduct = product.name.includes('신분증') || product.name.includes('면허증');
+    const isVapeDevice = product.name.includes('전자 담배') && !product.name.includes('액상');
+    const isVapeLiquid = product.name.includes('액상');
+    const isLiquor = product.name.includes('주류');
+    const isCigarette = product.name === '담배';
+    const isVapeProduct = isVapeDevice || isVapeLiquid;
+    const isDetailedProduct = isVapeProduct || isLiquor || isCigarette;
 
     const handleBuyNow = () => {
-        navigate('/checkout', { state: { product: { ...product, quantity, customAddress, specificAddress, detailAddress, idName, idBirth, idAddress, idPhoto: idPhoto ? '파일 업로드됨' : '' } } });
+        if (!customAddress) {
+            alert('배송지를 상세 설정을 눌러 입력해 주세요.');
+            setShowDetailInput(true);
+            return;
+        }
+        if (isDetailedProduct && !vapeModel) {
+            let typeText = '브랜드와 상세 모델';
+            if (isLiquor) typeText = '주류 종류와 세부 품목';
+            if (isCigarette) typeText = '담배 브랜드와 상세 종류';
+            alert(`${typeText}을 먼저 선택해 주세요.`);
+            setShowDetailInput(true);
+            return;
+        }
+        const finalPrice = vapePrice || product.price;
+        navigate('/checkout', { 
+            state: { 
+                product: { 
+                    ...product, 
+                    price: finalPrice, 
+                    quantity, 
+                    customAddress, 
+                    idName, 
+                    idBirth, 
+                    idAddress, 
+                    idPhoto, 
+                    vapeBrand, 
+                    vapeModel,
+                    vapeModelName: isCigarette ? `${vapeModel} (보루)` : vapeModel
+                } 
+            } 
+        });
     };
 
     const handlePhotoChange = (e) => {
@@ -45,6 +84,165 @@ const ProductDetail = ({ addToCart }) => {
             setIdPhoto(file.name); // Storing name as simulation
         }
     };
+
+    const vapeDeviceModelsByBrand = {
+        '유웰 (UWELL)': [
+            { name: '발라리안 맥스 프로', price: 78000 },
+            { name: '발라리안 맥스', price: 65000 },
+            { name: '발라리안 R', price: 53000 },
+            { name: '하복(Havok) 킷', price: 75000 },
+            { name: '칼리번 G3', price: 50000 }
+        ],
+        '부푸 (VOOPOO)': [
+            { name: '드래그 X 프로', price: 90000 },
+            { name: '드래그 S 프로', price: 85000 },
+            { name: '빈치 3', price: 60000 },
+            { name: '아르고스 P2', price: 65000 },
+            { name: '드래그 H80S', price: 100000 }
+        ],
+        '릴렉스 (RELX)': [
+            { name: 'RELX Infinity 2', price: 60000 },
+            { name: 'RELX Essential', price: 40000 },
+            { name: 'RELX Artisan', price: 100000 },
+            { name: 'RELX Phantom', price: 70000 },
+            { name: 'RELX Infinity Plus', price: 80000 }
+        ],
+        '스모크 (SMOK)': [
+            { name: '노보 5', price: 40000 },
+            { name: 'RPM 5', price: 80000 },
+            { name: 'Nord 5', price: 70000 },
+            { name: 'IPX80', price: 85000 },
+            { name: 'RPM 100', price: 95000 }
+        ],
+        '아스파이어 (Aspire)': [
+            { name: 'Cyber X', price: 50000 },
+            { name: 'Flexus Q', price: 60000 },
+            { name: 'Gotek X', price: 40000 },
+            { name: 'Nautilus Prime X', price: 90000 },
+            { name: 'BP80', price: 85000 }
+        ],
+        '아이코스 (IQOS)': [
+            { name: '아이코스 일루마 프라임', price: 129000 },
+            { name: '아이코스 일루마', price: 99000 },
+            { name: '아이코스 일루마 원', price: 69000 },
+            { name: '아이코스 3 듀오', price: 90000 },
+            { name: '아이코스 멀티', price: 70000 }
+        ],
+        '릴 (KT&G lil)': [
+            { name: '릴 에이블', price: 100000 },
+            { name: '릴 하이브리드 3.0', price: 110000 },
+            { name: '릴 솔리드 2.0', price: 70000 },
+            { name: '릴 미니', price: 50000 },
+            { name: '릴 플러스', price: 80000 }
+        ],
+        '하카 (Haka)': [
+            { name: '하카 H', price: 100000 },
+            { name: '하카 Q', price: 80000 },
+            { name: '하카 뉴 블레이드', price: 70000 },
+            { name: '하카 시그니처', price: 90000 },
+            { name: '하카 B', price: 85000 }
+        ],
+        '글로 (glo / BAT)': [
+            { name: '글로 하이퍼 프로', price: 100000 },
+            { name: '글로 하이퍼 X2', price: 80000 },
+            { name: '글로 프로', price: 70000 },
+            { name: '글로 나노', price: 50000 },
+            { name: '글로 센스', price: 60000 }
+        ]
+    };
+
+    const vapeLiquidModelsByBrand = {
+        'Nasty Juice': [
+            { name: '네스티 ASAP 그레이프', price: 30000 },
+            { name: '네스티 하이민트', price: 32000 },
+            { name: '네스티 망고 아이스', price: 30000 },
+            { name: '네스티 더블 애플', price: 30000 },
+            { name: '네스티 콜라 아이스', price: 28000 }
+        ],
+        'Dinner Lady': [
+            { name: '디너레이디 레몬타르트', price: 32000 },
+            { name: '디너레이디 스트로베리 마카롱', price: 35000 },
+            { name: '디너레이디 바나나 아이스', price: 30000 },
+            { name: '디너레이디 망고 타르트', price: 32000 },
+            { name: '디너레이디 바닐라 커스터드', price: 35000 }
+        ],
+        'VGOD': [
+            { name: '브이고드 쿠바노', price: 35000 },
+            { name: '브이고드 망고밤', price: 30000 },
+            { name: '브이고드 라쉬 아이스', price: 32000 },
+            { name: '브이고드 퍼플밤', price: 30000 },
+            { name: '브이고드 베리밤', price: 30000 }
+        ],
+        'BLVK': [
+            { name: 'BLVK 유니콘', price: 30000 },
+            { name: 'BLVK 블루라즈 아이스', price: 32000 },
+            { name: 'BLVK 스트로베리', price: 30000 },
+            { name: 'BLVK 파인애플 아이스', price: 32000 },
+            { name: 'BLVK 그린애플', price: 30000 }
+        ],
+        'Jam Monster': [
+            { name: '잼몬스터 스트로베리 잼', price: 35000 },
+            { name: '잼몬스터 블루베리 잼', price: 35000 },
+            { name: '잼몬스터 애플 잼', price: 35000 },
+            { name: '잼몬스터 그레이프 잼', price: 35000 },
+            { name: '잼몬스터 피넛버터', price: 38000 }
+        ]
+    };
+
+    const liquorModelsByBrand = {
+        '소주 (Soju)': [
+            { name: '참이슬 후레쉬', price: 1900 },
+            { name: '참이슬 클래식', price: 1900 },
+            { name: '처음처럼', price: 1900 },
+            { name: '진로', price: 1800 },
+            { name: '새로', price: 2100 }
+        ],
+        '맥주 (Beer)': [
+            { name: '카스', price: 2800 },
+            { name: '테라', price: 2800 },
+            { name: '하이트', price: 2800 },
+            { name: '켈리', price: 2800 }
+        ]
+    };
+
+    const cigaretteModelsByBrand = {
+        '말보로 (Marlboro)': [
+            { name: '말보로 레드', price: 45000 },
+            { name: '말보로 골드', price: 45000 },
+            { name: '말보로 아이스 블라스트', price: 45000 },
+            { name: '말보로 더블퓨전', price: 45000 }
+        ],
+        '에쎄 (Esse)': [
+            { name: '에쎄 라이트', price: 45000 },
+            { name: '에쎄 체인지', price: 45000 },
+            { name: '에쎄 수', price: 45000 },
+            { name: '에쎄 골든리프', price: 45000 }
+        ],
+        '던힐 (Dunhill)': [
+            { name: '던힐 파인컷', price: 45000 },
+            { name: '던힐 프로스트', price: 45000 },
+            { name: '던힐 1mg', price: 45000 }
+        ],
+        '기타 브랜드': [
+            { name: '카멜 블루', price: 45000 },
+            { name: '카멜 필터', price: 45000 },
+            { name: '보헴 시가 넘버6', price: 45000 },
+            { name: '보헴 시가 마스터', price: 45000 },
+            { name: '레종 블루', price: 45000 },
+            { name: '레종 프렌치 블랙', price: 45000 },
+            { name: '디스 플러스', price: 45000 },
+            { name: '더원 블루', price: 45000 },
+            { name: '더원 오리지널', price: 45000 }
+        ]
+    };
+
+    const activeModelsByBrand = isVapeLiquid 
+        ? vapeLiquidModelsByBrand 
+        : isLiquor 
+            ? liquorModelsByBrand 
+            : isCigarette
+                ? cigaretteModelsByBrand
+                : vapeDeviceModelsByBrand;
 
     return (
         <div className="container animate-fade-in" style={{ padding: '40px 20px' }}>
@@ -64,22 +262,59 @@ const ProductDetail = ({ addToCart }) => {
                     </h1>
                     <div style={{ marginBottom: '24px', display: 'flex', alignItems: 'baseline', gap: '8px' }}>
                         <span style={{ fontSize: '2rem', fontWeight: 700, color: 'var(--primary)' }}>
-                            {(product.price * quantity).toLocaleString()}원
+                            {((vapePrice || product.price) * quantity).toLocaleString()}원
                         </span>
                         {quantity > 1 && (
                             <span style={{ fontSize: '1.1rem', color: 'var(--text-muted)' }}>
-                                (개당 {product.price.toLocaleString()}원)
+                                (개당 {(vapePrice || product.price).toLocaleString()}원)
                             </span>
                         )}
                     </div>
                     <div style={{ borderTop: '1px solid var(--border)', paddingTop: '24px', marginBottom: '24px' }}>
-                        <p style={{ color: 'var(--text-muted)', lineHeight: 1.6, wordBreak: 'keep-all' }}>
-                            이 상품은 최고급 소재로 제작되어 내구성이 뛰어납니다. 모던한 디자인으로 어느 공간에나 잘 어울리며, 당신의 라이프스타일을 한층 업그레이드해 줄 완벽한 아이템입니다.
+                        <p style={{ color: 'var(--text-main)', lineHeight: 1.6, wordBreak: 'keep-all', fontWeight: 500 }}>
+                            {product.description || '최고급 소재로 제작된 프리미엄 상품입니다. 당신의 라이프스타일을 한층 업그레이드해 줄 완벽한 아이템입니다.'}
                         </p>
                     </div>
 
                     {/* Input Sections (Split) */}
                     <div style={{ marginBottom: '32px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                        
+                        {/* Custom Address Input Section */}
+                        <div style={{ marginBottom: '16px' }}>
+                            <button 
+                                onClick={() => setShowAddressInput(!showAddressInput)}
+                                style={{ 
+                                    background: 'rgba(234, 88, 12, 0.1)', 
+                                    border: '1px solid var(--primary)', 
+                                    color: 'var(--primary)',
+                                    padding: '8px 16px',
+                                    borderRadius: 'var(--radius-md)',
+                                    fontSize: '0.9rem',
+                                    fontWeight: 700,
+                                    cursor: 'pointer',
+                                    marginBottom: showAddressInput ? '12px' : '0',
+                                    width: '100%'
+                                }}
+                            >
+                                {showAddressInput ? '입력창 닫기' : '상세 정보 입력 (배송지)'}
+                            </button>
+                            
+                            {showAddressInput && (
+                                <div className="animate-fade-in" style={{ marginBottom: '12px' }}>
+                                    <label style={{ display: 'block', fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '8px' }}>요청 배송 주소를 입력해주세요:</label>
+                                    <input 
+                                        type="text" 
+                                        className="input-field" 
+                                        placeholder="예: 서울특별시 강남구..." 
+                                        value={customAddress}
+                                        onChange={(e) => setCustomAddress(e.target.value)}
+                                        style={{ width: '100%', padding: '12px' }}
+                                    />
+                                </div>
+                            )}
+                        </div>
+
+
                         {/* Detailed Settings Button & Input */}
                         <div>
                             <button 
@@ -153,6 +388,83 @@ const ProductDetail = ({ addToCart }) => {
                                                 {idPhoto && <div style={{ fontSize: '0.75rem', color: '#10b981', marginTop: '4px' }}>✓ {idPhoto} 선택됨</div>}
                                             </div>
                                         </div>
+                                    ) : isDetailedProduct ? (
+                                        <div style={{ 
+                                            display: 'flex', 
+                                            flexDirection: 'column', 
+                                            gap: '16px', 
+                                            padding: '16px', 
+                                            backgroundColor: isLiquor ? 'rgba(59, 130, 246, 0.05)' : isCigarette ? 'rgba(234, 88, 12, 0.05)' : 'rgba(16, 185, 129, 0.05)', 
+                                            borderRadius: '12px', 
+                                            border: isLiquor ? '1px solid rgba(59, 130, 246, 0.2)' : isCigarette ? '1px solid rgba(234, 88, 12, 0.2)' : '1px solid rgba(16, 185, 129, 0.2)' 
+                                        }}>
+                                            <div>
+                                                <h4 style={{ color: isLiquor ? '#3b82f6' : isCigarette ? '#ea580c' : '#10b981', marginBottom: '8px', fontSize: '0.95rem' }}>1. {isLiquor ? '주류 종류 선택' : '브랜드 선택'}</h4>
+                                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '8px' }}>
+                                                    {Object.keys(activeModelsByBrand).map(brand => (
+                                                        <button
+                                                            key={brand}
+                                                            onClick={() => {
+                                                                setVapeBrand(brand);
+                                                                setVapeModel('');
+                                                                setVapePrice(0);
+                                                            }}
+                                                            style={{
+                                                                padding: '10px 8px',
+                                                                borderRadius: '8px',
+                                                                fontSize: '0.8rem',
+                                                                border: '1px solid',
+                                                                borderColor: vapeBrand === brand ? (isLiquor ? '#3b82f6' : isCigarette ? '#ea580c' : '#10b981') : 'rgba(255,255,255,0.1)',
+                                                                backgroundColor: vapeBrand === brand ? (isLiquor ? 'rgba(59, 130, 246, 0.2)' : isCigarette ? 'rgba(234, 88, 12, 0.2)' : 'rgba(16, 185, 129, 0.2)') : 'rgba(255,255,255,0.05)',
+                                                                color: vapeBrand === brand ? (isLiquor ? '#3b82f6' : isCigarette ? '#ea580c' : '#10b981') : 'var(--text-main)',
+                                                                transition: 'all 0.2s',
+                                                                textAlign: 'center'
+                                                            }}
+                                                        >
+                                                            {brand}
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            </div>
+
+                                            {vapeBrand && activeModelsByBrand[vapeBrand] && (
+                                                <div className="animate-fade-in" style={{ borderTop: isLiquor ? '1px solid rgba(59, 130, 246, 0.2)' : isCigarette ? '1px solid rgba(234, 88, 12, 0.2)' : '1px solid rgba(16, 185, 129, 0.2)', paddingTop: '16px' }}>
+                                                    <h4 style={{ color: isLiquor ? '#3b82f6' : isCigarette ? '#ea580c' : '#10b981', marginBottom: '8px', fontSize: '0.95rem' }}>2. 상세 {isLiquor ? '품목' : isCigarette ? '종류' : '모델'} 선택 ({vapeBrand})</h4>
+                                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                                        {activeModelsByBrand[vapeBrand].map(model => (
+                                                            <button
+                                                                key={model.name}
+                                                                onClick={() => {
+                                                                    setVapeModel(model.name);
+                                                                    setVapePrice(model.price);
+                                                                }}
+                                                                style={{
+                                                                    padding: '12px 16px',
+                                                                    borderRadius: '8px',
+                                                                    fontSize: '0.9rem',
+                                                                    border: '1px solid',
+                                                                    borderColor: vapeModel === model.name ? (isLiquor ? '#3b82f6' : isCigarette ? '#ea580c' : '#10b981') : 'rgba(255,255,255,0.1)',
+                                                                    backgroundColor: vapeModel === model.name ? (isLiquor ? 'rgba(59, 130, 246, 0.2)' : isCigarette ? 'rgba(234, 88, 12, 0.2)' : 'rgba(16, 185, 129, 0.2)') : 'rgba(255,255,255,0.05)',
+                                                                    color: vapeModel === model.name ? (isLiquor ? '#3b82f6' : isCigarette ? '#ea580c' : '#10b981') : 'var(--text-main)',
+                                                                    display: 'flex',
+                                                                    justifyContent: 'space-between',
+                                                                    alignItems: 'center'
+                                                                }}
+                                                            >
+                                                                <span>{model.name}</span>
+                                                                <span style={{ fontWeight: 700 }}>{model.price.toLocaleString()}원</span>
+                                                            </button>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            {vapeBrand && (
+                                                <p style={{ fontSize: '0.85rem', color: isLiquor ? '#3b82f6' : isCigarette ? '#ea580c' : '#10b981', marginTop: '4px' }}>
+                                                    선택됨: <strong>{vapeBrand} {vapeModel ? `/ ${vapeModel}` : ''} {isCigarette ? `(보루)` : ''}</strong>
+                                                </p>
+                                            )}
+                                        </div>
                                     ) : (
                                         <>
                                             <label style={{ display: 'block', fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '8px' }}>
@@ -167,54 +479,6 @@ const ProductDetail = ({ addToCart }) => {
                                             />
                                         </>
                                     )}
-                                </div>
-                            )}
-                        </div>
-
-                        {/* Delivery Address Button & Input */}
-                        <div>
-                            <button 
-                                onClick={() => setShowAddressInput(!showAddressInput)}
-                                style={{ 
-                                    background: 'rgba(16, 185, 129, 0.1)', 
-                                    border: '1px solid #10b981', 
-                                    color: '#10b981',
-                                    padding: '8px 16px',
-                                    borderRadius: 'var(--radius-md)',
-                                    fontSize: '0.9rem',
-                                    fontWeight: 700,
-                                    cursor: 'pointer',
-                                    marginBottom: showAddressInput ? '12px' : '0',
-                                    width: '100%'
-                                }}
-                            >
-                                {showAddressInput ? '배송지 주소창 닫기' : '배송지 주소 입력'}
-                            </button>
-                            
-                            {showAddressInput && (
-                                <div className="animate-fade-in" style={{ marginTop: '12px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                                    <div>
-                                        <label style={{ display: 'block', fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '8px' }}>배송지 주소 (기본 주소):</label>
-                                        <input 
-                                            type="text" 
-                                            className="input-field" 
-                                            placeholder="예: 서울특별시 강남구..." 
-                                            value={customAddress}
-                                            onChange={(e) => setCustomAddress(e.target.value)}
-                                            style={{ width: '100%', padding: '12px', backgroundColor: 'rgba(0,0,0,0.2)', color: 'white', borderRadius: '8px', border: '1px solid var(--border)' }}
-                                        />
-                                    </div>
-                                    <div>
-                                        <label style={{ display: 'block', fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '8px' }}>상세 주소 (건물명, 동/호수 등):</label>
-                                        <input 
-                                            type="text" 
-                                            className="input-field" 
-                                            placeholder="예: 제오스 빌딩 7층 701호" 
-                                            value={specificAddress}
-                                            onChange={(e) => setSpecificAddress(e.target.value)}
-                                            style={{ width: '100%', padding: '12px', backgroundColor: 'rgba(0,0,0,0.2)', color: 'white', borderRadius: '8px', border: '1px solid var(--border)' }}
-                                        />
-                                    </div>
                                 </div>
                             )}
                         </div>
@@ -239,7 +503,34 @@ const ProductDetail = ({ addToCart }) => {
                         <button
                             className="btn btn-outline"
                             style={{ flex: '1 1 auto', padding: '16px' }}
-                            onClick={() => addToCart({ ...product, quantity, customAddress, specificAddress, detailAddress, idName, idBirth, idAddress, idPhoto: idPhoto ? '파일 업로드됨' : '' })}
+                            onClick={() => {
+                                if (!customAddress) {
+                                    alert('배송지를 상세 설정을 눌러 입력해 주세요.');
+                                    setShowDetailInput(true);
+                                    return;
+                                }
+                                if (isDetailedProduct && !vapeModel) {
+                                    let typeText = '브랜드와 상세 모델';
+                                    if (isLiquor) typeText = '주류 종류와 세부 품목';
+                                    if (isCigarette) typeText = '담배 브랜드와 상세 종류';
+                                    alert(`${typeText}을 먼저 선택해 주세요.`);
+                                    setShowDetailInput(true);
+                                    return;
+                                }
+                                addToCart({ 
+                                    ...product, 
+                                    price: vapePrice || product.price, 
+                                    quantity, 
+                                    customAddress, 
+                                    idName, 
+                                    idBirth, 
+                                    idAddress, 
+                                    idPhoto, 
+                                    vapeBrand, 
+                                    vapeModel,
+                                    vapeModelName: isCigarette ? `${vapeModel} (보루)` : vapeModel
+                                });
+                            }}
                         >
                             장바구니 담기
                         </button>

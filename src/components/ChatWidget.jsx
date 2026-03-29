@@ -148,6 +148,22 @@ const ChatWidget = ({ isOpen, onClose }) => {
 
             {/* Chat Area */}
             <div style={{ flex: 1, padding: '20px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '16px', background: '#f8fafc' }}>
+                {isLoggedIn && (
+                    <div style={{ 
+                        padding: '10px 14px', 
+                        backgroundColor: 'rgba(16, 185, 129, 0.08)', 
+                        border: '1px solid rgba(16, 185, 129, 0.2)', 
+                        borderRadius: '12px',
+                        fontSize: '0.8rem',
+                        color: '#065f46',
+                        textAlign: 'center',
+                        marginBottom: '4px'
+                    }}>
+                        <strong>고객센터 운영시간 안내</strong><br />
+                        평일: 17:00 ~ 22:00<br />
+                        주말 및 공휴일: 12:00 ~ 22:00
+                    </div>
+                )}
                 {!isLoggedIn ? (
                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', textAlign: 'center', padding: '20px', color: '#64748b' }}>
                         <div style={{ fontSize: '3rem', marginBottom: '16px' }}>🔒</div>

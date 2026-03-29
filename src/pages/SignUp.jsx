@@ -115,7 +115,7 @@ const SignUp = () => {
 
         try {
             console.log("Starting signup process for ID:", formData.id);
-            
+
             // 중복 아이디 최종 체크
             await Promise.race([
                 (async () => {
@@ -127,14 +127,14 @@ const SignUp = () => {
                 })(),
                 new Promise((_, reject) => setTimeout(() => reject(new Error("TIMEOUT")), 10000))
             ]);
-            
+
             // Firestore에 유저 정보 저장
             const newUser = {
                 ...formData,
                 createdAt: new Date().toISOString(),
                 isAdmin: false
             };
-            
+
             delete newUser.passwordConfirm;
 
             const userDocRef = doc(db, 'users', formData.id);
@@ -181,7 +181,7 @@ const SignUp = () => {
                         <div style={{ display: 'flex', gap: '8px', alignItems: 'center', width: '100%' }}>
                             <input type="text" name="ssnFront" className="input-field" placeholder="앞자리 (6자리)" maxLength={6} style={{ flex: '1 1 0', minWidth: 0 }} value={formData.ssnFront} onChange={handleChange} />
                             <span style={{ flexShrink: 0 }}>-</span>
-                            <input type="password" name="ssnBack" className="input-field" placeholder="뒷자리 (7자리)" maxLength={7} style={{ flex: '1 1 0', minWidth: 0 }} value={formData.ssnBack} onChange={handleChange} />
+                            <input type="password" name="ssnBack" className="input-field" placeholder="뒷자리 (1자리)" maxLength={1} style={{ flex: '1 1 0', minWidth: 0 }} value={formData.ssnBack} onChange={handleChange} />
                         </div>
                     </div>
                     <div className="input-group">
@@ -266,24 +266,24 @@ const SignUp = () => {
                         <p style={{ marginBottom: '12px' }}>
                             본 서비스의 회원이 되시는 고객님께서는 원활하고 안전한 서비스 이용을 위해 아래의 주의사항을 반드시 확인해 주시기 바랍니다.
                         </p>
-                        
+
                         <div style={{ marginBottom: '12px' }}>
                             <strong style={{ color: '#334155', display: 'block', marginBottom: '4px' }}>1. 계정 정보 관리 및 보안 유지</strong>
-                            • <strong>비밀번호 관리:</strong> 타인이 추측하기 쉬운 비밀번호 사용을 지양하고, 정기적으로 변경하시기 바랍니다. 본인 부주의로 인한 계정 정보 유출의 책임은 사용자에게 있습니다.<br/>
+                            • <strong>비밀번호 관리:</strong> 타인이 추측하기 쉬운 비밀번호 사용을 지양하고, 정기적으로 변경하시기 바랍니다. 본인 부주의로 인한 계정 정보 유출의 책임은 사용자에게 있습니다.<br />
                             • <strong>1인 1계정 원칙:</strong> 본 서비스는 실명 인증을 통한 1인 1계정 이용을 원칙으로 합니다. 타인의 정보를 도용하여 가입할 경우 법적 처벌을 받을 수 있으며 서비스 이용이 영구 정지됩니다.
                         </div>
 
                         <div style={{ marginBottom: '12px' }}>
                             <strong style={{ color: '#334155', display: 'block', marginBottom: '4px' }}>2. 부정 이용 및 금지 행위</strong>
-                            • <strong>비정상적 접근:</strong> 매크로, 해킹, 시스템 취약점 악용 등 비정상적인 방법으로 서비스를 이용하거나 서버에 부하를 주는 행위를 엄격히 금지합니다.<br/>
-                            • <strong>허위 정보 기재:</strong> 가입 시 허위 정보를 입력할 경우 서비스 이용에 제한을 받을 수 있으며, 이벤트 당첨 취소 등의 불이익이 발생할 수 있습니다.<br/>
+                            • <strong>비정상적 접근:</strong> 매크로, 해킹, 시스템 취약점 악용 등 비정상적인 방법으로 서비스를 이용하거나 서버에 부하를 주는 행위를 엄격히 금지합니다.<br />
+                            • <strong>허위 정보 기재:</strong> 가입 시 허위 정보를 입력할 경우 서비스 이용에 제한을 받을 수 있으며, 이벤트 당첨 취소 등의 불이익이 발생할 수 있습니다.<br />
                             • <strong>상업적 홍보 및 도배:</strong> 승인되지 않은 광고물을 배포하거나 동일 내용을 반복 게시하는 행위는 제재 대상입니다.
                         </div>
 
                         <div style={{ marginBottom: '12px' }}>
                             <strong style={{ color: '#334155', display: 'block', marginBottom: '4px' }}>3. 법적 책임 및 고지 사항</strong>
-                            • <strong>저작권 준수:</strong> 콘텐츠를 무단 복제, 배포, 수정하여 상업적으로 이용하는 행위는 저작권법 위반에 해당합니다.<br/>
-                            • <strong>서비스 중단:</strong> 시스템 점검 등으로 서비스가 일시 중단될 수 있으며, 이 경우 사전 공지를 통해 안내드립니다.<br/>
+                            • <strong>저작권 준수:</strong> 콘텐츠를 무단 복제, 배포, 수정하여 상업적으로 이용하는 행위는 저작권법 위반에 해당합니다.<br />
+                            • <strong>서비스 중단:</strong> 시스템 점검 등으로 서비스가 일시 중단될 수 있으며, 이 경우 사전 공지를 통해 안내드립니다.<br />
                             • <strong>약관 동의:</strong> 가입 완료 시 본 서비스의 이용약관 및 개인정보 처리방침에 동의한 것으로 간주됩니다.
                         </div>
 
@@ -293,9 +293,9 @@ const SignUp = () => {
                     </div>
 
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '16px', cursor: 'pointer' }} onClick={() => setAgreed(!agreed)}>
-                        <input 
-                            type="checkbox" 
-                            checked={agreed} 
+                        <input
+                            type="checkbox"
+                            checked={agreed}
                             onChange={(e) => setAgreed(e.target.checked)}
                             style={{ width: '18px', height: '18px', cursor: 'pointer' }}
                         />
@@ -310,12 +310,12 @@ const SignUp = () => {
                         </div>
                     )}
 
-                    <button 
-                        type="submit" 
-                        className="btn btn-primary" 
-                        style={{ 
-                            width: '100%', 
-                            marginTop: '20px', 
+                    <button
+                        type="submit"
+                        className="btn btn-primary"
+                        style={{
+                            width: '100%',
+                            marginTop: '20px',
                             padding: '14px',
                             opacity: isRegistering ? 0.7 : 1,
                             cursor: isRegistering ? 'not-allowed' : 'pointer'
