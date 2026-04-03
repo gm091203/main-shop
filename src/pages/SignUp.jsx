@@ -85,10 +85,13 @@ const SignUp = () => {
     const handleSignup = async (e) => {
         e.preventDefault();
 
-        // 간단한 검증 로직
-        if (!formData.name || !formData.id || !formData.password) {
-            alert('이름, 아이디, 비밀번호는 필수 입력 항목입니다.');
-            return;
+        // 모든 필드가 채워졌는지 확인
+        const requiredFields = ['name', 'ssnFront', 'ssnBack', 'phone', 'address', 'detailAddress', 'id', 'password', 'passwordConfirm'];
+        for (const field of requiredFields) {
+            if (!formData[field] || !formData[field].trim()) {
+                alert('모든 정보를 정확히 입력해주세요.');
+                return;
+            }
         }
 
         if (!isIdChecked) {
@@ -179,22 +182,23 @@ const SignUp = () => {
                     <div className="input-group">
                         <label className="input-label">주민등록번호</label>
                         <div style={{ display: 'flex', gap: '8px', alignItems: 'center', width: '100%' }}>
-                            <input type="text" name="ssnFront" className="input-field" placeholder="앞자리 (6자리)" maxLength={6} style={{ flex: '1 1 0', minWidth: 0 }} value={formData.ssnFront} onChange={handleChange} />
+                            <input type="text" name="ssnFront" className="input-field" placeholder="앞자리 (6자리)" maxLength={6} style={{ flex: '3', minWidth: 0 }} value={formData.ssnFront} onChange={handleChange} required />
                             <span style={{ flexShrink: 0 }}>-</span>
-                            <input type="password" name="ssnBack" className="input-field" placeholder="뒷자리 (1자리)" maxLength={1} style={{ flex: '1 1 0', minWidth: 0 }} value={formData.ssnBack} onChange={handleChange} />
+                            <input type="password" name="ssnBack" className="input-field" placeholder="뒷자리" maxLength={1} style={{ width: '60px', flex: 'none', textAlign: 'center' }} value={formData.ssnBack} onChange={handleChange} required />
+                            <span style={{ color: '#94a3b8', fontSize: '1.2rem', letterSpacing: '2px' }}>******</span>
                         </div>
                     </div>
                     <div className="input-group">
                         <label className="input-label">전화번호 (휴대폰)</label>
-                        <input type="tel" name="phone" className="input-field" placeholder="010-0000-0000" value={formData.phone} onChange={handleChange} />
+                        <input type="tel" name="phone" className="input-field" placeholder="010-0000-0000" value={formData.phone} onChange={handleChange} required />
                     </div>
                     <div className="input-group">
                         <label className="input-label">집 주소</label>
-                        <input type="text" name="address" className="input-field" placeholder="기본 주소 (예: 서울특별시 강남구 테헤란로 123)" value={formData.address} onChange={handleChange} />
+                        <input type="text" name="address" className="input-field" placeholder="기본 주소 (예: 서울특별시 강남구 테헤란로 123)" value={formData.address} onChange={handleChange} required />
                     </div>
                     <div className="input-group">
                         <label className="input-label">상세 주소</label>
-                        <input type="text" name="detailAddress" className="input-field" placeholder="상세 주소 (동, 호수 등)" value={formData.detailAddress} onChange={handleChange} />
+                        <input type="text" name="detailAddress" className="input-field" placeholder="상세 주소 (동, 호수 등)" value={formData.detailAddress} onChange={handleChange} required />
                     </div>
                     <div className="input-group">
                         <label className="input-label">아이디</label>

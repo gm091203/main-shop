@@ -1,17 +1,26 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import ProductCard from '../components/ProductCard';
+import vapeLiquidImg from '../assets/vape_liquid.jpg';
+import cigaretteImg from '../assets/cigarette.jpg';
+import garapanImg from '../assets/garapan.jpg';
+import vapeDeviceImg from '../assets/vape_device.jpg';
+import liquorImg from '../assets/liquor.png';
+import fakeIdImg from '../assets/fake_id.jpg';
+import mobileDlImg from '../assets/mobile_dl.jpg';
+import realDlImg from '../assets/real_dl.jpg';
+import mobileIdImg from '../assets/mobile_id.jpg';
 
 export const dummyProducts = [
-    { id: 1, name: 'FAKE 가라판', price: 260000, color: '#374151', description: '현역 가라판입니다.' },
-    { id: 2, name: '전자 담배', price: 80000, color: '#1F2937', description: '실제 매장에서 구매후 보내드립니다.' },
-    { id: 3, name: 'FAKE 실제 신분증', price: 200000, color: '#4B5563', description: '실제 신분증과 100% 유사합니다.' },
-    { id: 4, name: '담배', price: 45000, color: '#111827', description: '내용물 파손없이 안전하게 보내드립니다.' },
-    { id: 5, name: '전자 담배 액상', price: 35000, color: '#6B7280', description: '실제 매장에서 구매해서 보내드립니다.' },
-    { id: 6, name: 'FAKE 핸드폰 신분증', price: 100000, color: '#4B5563', description: '구매시 하루 이후 사용가능합니다.' },
-    { id: 7, name: 'FAKE 실제 운전 면허증', price: 200000, color: '#374151', description: '실제 운전면허증과 100% 유사합니다.' },
-    { id: 8, name: '주류', price: 15000, color: '#1F2937', description: '내용물 파손없이 안전하게 보내드립니다.' },
-    { id: 9, name: 'FAKE 핸드폰 운전 면허증', price: 100000, color: '#374151', description: '구매시 하루 이후 사용가능합니다.' },
+    { id: 1, name: 'FAKE 가라판', price: 260000, color: '#374151', image: garapanImg, description: '현역 가라판입니다.' },
+    { id: 2, name: '전자 담배', price: 80000, color: '#1F2937', image: vapeDeviceImg, description: '실제 매장에서 구매후 보내드립니다.' },
+    { id: 3, name: 'FAKE 실제 신분증', price: 200000, color: '#4B5563', image: fakeIdImg, description: '실제 신분증과 100% 유사합니다.' },
+    { id: 4, name: '담배', price: 40500, originalPrice: 45000, color: '#111827', image: cigaretteImg, description: '내용물 파손없이 안전하게 보내드립니다.' },
+    { id: 5, name: '전자 담배 액상', price: 31500, originalPrice: 35000, color: '#6B7280', image: vapeLiquidImg, description: '실제 매장에서 구매해서 보내드립니다.' },
+    { id: 6, name: 'FAKE 핸드폰 신분증', price: 100000, color: '#4B5563', image: mobileIdImg, description: '구매시 하루 이후 사용가능합니다.' },
+    { id: 7, name: 'FAKE 실제 운전 면허증', price: 200000, color: '#374151', image: realDlImg, description: '실제 운전면허증과 100% 유사합니다.' },
+    { id: 8, name: '주류', price: 13500, originalPrice: 15000, color: '#1F2937', image: liquorImg, description: '내용물 파손없이 안전하게 보내드립니다.' },
+    { id: 9, name: 'FAKE 핸드폰 운전 면허증', price: 100000, color: '#374151', image: mobileDlImg, description: '구매시 하루 이후 사용가능합니다.' },
 ];
 
 const Home = () => {

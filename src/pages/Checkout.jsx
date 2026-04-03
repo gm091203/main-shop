@@ -5,7 +5,7 @@ import { db } from '../firebase';
 import { collection, addDoc, query, where, getDocs, doc, updateDoc, increment } from 'firebase/firestore';
 import './Checkout.css';
 
-const Checkout = () => {
+const Checkout = ({ clearCart }) => {
     const location = useLocation();
     const navigate = useNavigate();
 
@@ -109,6 +109,11 @@ const Checkout = () => {
                 Promise.all(tasks),
                 timeoutPromise
             ]);
+            
+            // 주문이 장바구니에서 시작된 경우 장바구니 비우기
+            if (location.state?.items && clearCart) {
+                clearCart();
+            }
 
             window.dispatchEvent(new Event('storage'));
             setIsOrdered(true);
@@ -138,9 +143,9 @@ const Checkout = () => {
                             <span style={{ color: 'var(--primary)', fontWeight: 800 }}>{finalPrice.toLocaleString()}원</span>
                         </div>
                         <div style={{ borderTop: '1px solid var(--border)', paddingTop: '20px' }}>
-                            <p style={{ fontSize: '1rem', marginBottom: '8px' }}>은행: **안전은행**</p>
-                            <p style={{ fontSize: '1rem', marginBottom: '8px' }}>계좌: **123-456-789012**</p>
-                            <p style={{ fontSize: '1rem' }}>예금주: **(주)제오스샵**</p>
+                            <p style={{ fontSize: '1rem', marginBottom: '8px' }}>은행: **우리은행**</p>
+                            <p style={{ fontSize: '1rem', marginBottom: '8px' }}>계좌: **493-045948-18-201**</p>
+                            <p style={{ fontSize: '1rem' }}>예금주: **김경민**</p>
                         </div>
                     </div>
 

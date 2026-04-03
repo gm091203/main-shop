@@ -145,9 +145,9 @@ const OrderStatus = () => {
                                                         color: 'var(--text-main)'
                                                     }}>
                                                         <div style={{ fontWeight: 'bold', marginBottom: '4px', color: '#f59e0b' }}>입금 안내</div>
-                                                        <div>은행: 안전은행</div>
-                                                        <div>계좌: 123-456-789012</div>
-                                                        <div>예금주: (주)제오스샵</div>
+                                                        <div>은행: 우리은행</div>
+                                                        <div>계좌: 493-045948-18-201</div>
+                                                        <div>예금주: 김경민</div>
                                                     </div>
                                                 )}
                                             </div>

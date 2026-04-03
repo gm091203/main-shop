@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
-  "homepage": "https://gm091203.github.io/main-shop/",
+  "homepage": "https://cotp0512-tech.github.io/main/",
   "scripts": {
     "dev": "vite",
     "build": "vite build",

@@ -91,6 +91,11 @@ function App() {
       return newCart;
     });
   };
+  
+  const clearCart = () => {
+    setCartItems([]);
+    localStorage.setItem(getCartKey(), JSON.stringify([]));
+  };
 
   return (
     <Router>
@@ -102,7 +107,7 @@ function App() {
           <Route path="product/:id" element={<ProductDetail addToCart={addToCart} />} />
           <Route path="mypage" element={<MyPage />} />
           <Route path="orderstatus" element={<OrderStatus />} />
-          <Route path="checkout" element={<Checkout />} />
+          <Route path="checkout" element={<Checkout clearCart={clearCart} />} />
           <Route path="search" element={<Search />} />
         </Route>
         <Route path="/admin" element={<AdminDashboard />} />

@@ -24,6 +24,26 @@ const ChatWidget = ({ isOpen, onClose }) => {
 
     const currentUserStr = sessionStorage.getItem('currentUser') || localStorage.getItem('currentUser');
     const isLoggedIn = !!currentUserStr;
+    const [isOperating, setIsOperating] = useState(true);
+
+    useEffect(() => {
+        const checkOperatingHours = () => {
+            const now = new Date();
+            const day = now.getDay();
+            const hour = now.getHours();
+            const isWeekend = day === 0 || day === 6;
+            
+            if (isWeekend) {
+                setIsOperating(hour >= 12 && hour < 22);
+            } else {
+                setIsOperating(hour >= 17 && hour < 22);
+            }
+        };
+        
+        checkOperatingHours();
+        const interval = setInterval(checkOperatingHours, 60000);
+        return () => clearInterval(interval);
+    }, []);
 
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -58,15 +78,15 @@ const ChatWidget = ({ isOpen, onClose }) => {
             }
         };
 
-        if (isOpen && isLoggedIn) {
+        if (isOpen && isLoggedIn && isOperating) {
             fetchChatMessages();
             const interval = setInterval(fetchChatMessages, 4000);
             return () => clearInterval(interval);
         }
-    }, [isOpen, isLoggedIn]);
+    }, [isOpen, isLoggedIn, isOperating]);
 
     useEffect(() => {
-        if (isOpen && messages.length > 0) {
+        if (isOpen && isOperating && messages.length > 0) {
             scrollToBottom();
             const markAsRead = async () => {
                 const unreadBotMessages = messages.filter(msg => msg.sender === 'bot' && !msg.isRead);
@@ -80,11 +100,11 @@ const ChatWidget = ({ isOpen, onClose }) => {
             };
             markAsRead();
         }
-    }, [messages.length, isOpen]);
+    }, [messages.length, isOpen, isOperating]);
 
     const handleSend = async () => {
         if (!inputValue.trim()) return;
-        if (!isLoggedIn) return;
+        if (!isLoggedIn || !isOperating) return;
         
         const currentUser = JSON.parse(currentUserStr);
         const newUserMsg = {
@@ -136,7 +156,7 @@ const ChatWidget = ({ isOpen, onClose }) => {
             <div style={{ padding: '16px 20px', background: 'linear-gradient(135deg, #10B981, #059669)', color: 'white', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                     <div style={{ width: '10px', height: '10px', borderRadius: '50%', backgroundColor: '#4ADE80', boxShadow: '0 0 8px #4ADE80' }}></div>
-                    <span style={{ fontWeight: 700, fontSize: '1rem' }}>ZEO'S SHOP 고객지원</span>
+                    <span style={{ fontWeight: 700, fontSize: '1rem' }}>OSI 고객지원</span>
                 </div>
                 <button onClick={onClose} style={{ background: 'transparent', border: 'none', color: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -148,7 +168,7 @@ const ChatWidget = ({ isOpen, onClose }) => {
 
             {/* Chat Area */}
             <div style={{ flex: 1, padding: '20px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '16px', background: '#f8fafc' }}>
-                {isLoggedIn && (
+                {isLoggedIn && isOperating && (
                     <div style={{ 
                         padding: '10px 14px', 
                         backgroundColor: 'rgba(16, 185, 129, 0.08)', 
@@ -173,6 +193,17 @@ const ChatWidget = ({ isOpen, onClose }) => {
                             onClick={() => { onClose(); navigate('/login'); }}
                             style={{ backgroundColor: 'var(--primary)', color: 'white', border: 'none', padding: '10px 24px', borderRadius: '20px', fontWeight: 'bold', cursor: 'pointer' }}
                         >로그인하러 가기</button>
+                    </div>
+                ) : !isOperating ? (
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', textAlign: 'center', padding: '20px', color: '#64748b' }}>
+                        <div style={{ fontSize: '3rem', marginBottom: '16px' }}>🌙</div>
+                        <h4 style={{ color: '#1e293b', marginBottom: '8px' }}>운영 시간이 종료되었습니다</h4>
+                        <p style={{ fontSize: '0.9rem', marginBottom: '20px', lineHeight: '1.6' }}>
+                            <strong>[고객센터 운영시간]</strong><br/>
+                            평일: 17:00 ~ 22:00<br/>
+                            주말/공휴일: 12:00 ~ 22:00
+                        </p>
+                        <p style={{ fontSize: '0.8rem', color: '#94a3b8' }}>운영 시간에 다시 문의해주세요.</p>
                     </div>
                 ) : messages.length === 0 ? (
                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', textAlign: 'center', color: '#64748b' }}>
@@ -210,7 +241,7 @@ const ChatWidget = ({ isOpen, onClose }) => {
             </div>
 
             {/* Input Area */}
-            {isLoggedIn && (
+            {isLoggedIn && isOperating && (
                 <div style={{ padding: '16px', borderTop: '1px solid #e2e8f0', background: 'white', display: 'flex', gap: '8px' }}>
                     <input
                         type="text" value={inputValue} onChange={(e) => setInputValue(e.target.value)}
@@ -224,6 +255,11 @@ const ChatWidget = ({ isOpen, onClose }) => {
                     >
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
                     </button>
+                </div>
+            )}
+            {isLoggedIn && !isOperating && (
+                <div style={{ padding: '16px', borderTop: '1px solid #e2e8f0', background: '#f8fafc', display: 'flex', justifyContent: 'center', color: '#94a3b8', fontSize: '0.9rem' }}>
+                    채팅 입력이 제한되었습니다.
                 </div>
             )}
         </div>
